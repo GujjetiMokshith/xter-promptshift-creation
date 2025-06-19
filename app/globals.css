@@ -227,6 +227,23 @@
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); /* Increased glow from 0.2 to 0.5 */
 }
 
+/* Fix for tooltip positioning in the sidebar to prevent overlapping */
+.sidebar .tooltip-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Ensure tooltips don't overlap with elements below them */
+.sidebar-tooltip {
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  z-index: 50;
+  white-space: nowrap;
+}
+
 .card-hover:hover {
   transform: translateY(-2px);
   transition: all 0.2s ease-in-out;
@@ -251,11 +268,7 @@
   border-color: rgba(59, 130, 246, 0.5); /* Increased border opacity from 0.3 to 0.5 */
 }
 
-.search-input {
-  @apply pl-9 pr-9 py-2 rounded-md w-full text-sm transition-all duration-200 input-glow;
-  background-color: rgba(249, 250, 251, 0.7);
-  border: 1px solid rgba(229, 231, 235, 0.5);
-}
+/* Search input styles removed as we no longer need them */
 
 .chat-input {
   @apply w-full pl-4 pr-24 py-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-300 input-glow; /* Changed ring color to blue */
@@ -337,14 +350,7 @@
 }
 
 /* Fixed header and footer */
-.header {
-  @apply p-3 flex items-center justify-between z-10 relative;
-  background-color: rgba(255, 255, 255, 0);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-bottom: none;
-  box-shadow: none;
-}
+/* Header removed */
 
 .footer {
   @apply p-4 z-10 relative;
@@ -362,9 +368,9 @@
   animation: pulse-glow 4s ease-in-out infinite;
 }
 
-/* Content area */
+/* Content area - adjusted for no header */
 .content-area {
-  @apply flex-1 overflow-auto p-6 relative z-0;
+  @apply flex-1 overflow-auto p-6 pt-8 relative z-0;
   background-color: transparent;
 }
 
@@ -526,4 +532,227 @@ button:hover {
 /* Make sure whitespace is preserved in messages */
 .whitespace-pre-wrap {
   white-space: pre-wrap;
+  display: block; /* Add display block to ensure proper rendering */
+}
+
+/* Prompt suggestion item styling */
+.prompt-suggestion {
+  @apply flex items-center justify-between gap-2 p-2 rounded-md my-2 animate-fadeIn;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Enhanced Score Display Widget */
+.score-display-container {
+  @apply my-4 p-4 rounded-lg bg-white/80 backdrop-blur-md border animate-fadeIn;
+  border-color: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+}
+
+.score-header {
+  @apply text-sm font-semibold text-gray-700 mb-3 pb-2 border-b;
+  border-color: rgba(59, 130, 246, 0.1);
+}
+
+.score-display {
+  @apply flex flex-col md:flex-row gap-6 items-center;
+}
+
+.score-circle-container {
+  @apply flex-shrink-0;
+}
+
+.score-circle {
+  @apply relative flex flex-col items-center justify-center rounded-full w-24 h-24 text-white font-bold;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+  background: conic-gradient(currentColor var(--progress), #e2e8f0 0);
+  --progress: 0%;
+  transition: all 0.5s ease-out;
+}
+
+.score-circle::before {
+  content: '';
+  @apply absolute rounded-full w-20 h-20;
+  background-color: white;
+}
+
+.score-circle .score-value {
+  @apply relative z-10 text-2xl;
+  color: currentColor;
+}
+
+.score-circle .score-max {
+  @apply relative z-10 text-xs opacity-80;
+  color: currentColor;
+}
+
+.score-circle.score-high {
+  color: #10b981;
+  --progress: 100%;
+}
+
+.score-circle.score-medium {
+  color: #f59e0b;
+  --progress: 75%;
+}
+
+.score-circle.score-low {
+  color: #ef4444;
+  --progress: 50%;
+}
+
+.score-bar-container {
+  @apply flex-1 flex flex-col gap-1;
+}
+
+.score-label {
+  @apply flex justify-between text-sm mb-1;
+}
+
+.score-bar-background {
+  @apply h-3 w-full bg-gray-100 rounded-full overflow-hidden;
+}
+
+.score-bar {
+  @apply h-full rounded-full transition-all duration-1000 ease-out;
+  animation: grow-bar 1s ease-out forwards;
+  transform-origin: left;
+}
+
+@keyframes grow-bar {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.score-bar.score-high {
+  @apply bg-emerald-500;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.score-bar.score-medium {
+  @apply bg-amber-500;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.score-bar.score-low {
+  @apply bg-red-500;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.score-markers {
+  @apply flex justify-between text-xs text-gray-500 mt-1 px-1;
+  position: relative;
+  height: 16px;
+}
+
+.score-marker {
+  @apply absolute transform -translate-x-1/2;
+  top: 0;
+}
+
+/* Analysis badges */
+.analysis-badge-container {
+  @apply flex items-center gap-2 my-2 animate-fadeIn;
+  transform: translateX(0);
+  transition: transform 0.2s ease-out;
+}
+
+.analysis-badge-container:hover {
+  transform: translateX(5px);
+}
+
+.analysis-badge-icon {
+  @apply w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0;
+}
+
+.analysis-badge-container.strength .analysis-badge-icon {
+  @apply bg-emerald-500;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.analysis-badge-container.weakness .analysis-badge-icon {
+  @apply bg-red-500;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.analysis-badge-container.suggestion .analysis-badge-icon {
+  @apply bg-blue-500;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.analysis-badge {
+  @apply inline-block px-3 py-1.5 rounded-full text-sm font-medium;
+}
+
+.strength-badge {
+  @apply bg-emerald-50 text-emerald-800 border border-emerald-200;
+}
+
+.weakness-badge {
+  @apply bg-red-50 text-red-800 border border-red-200;
+}
+
+.suggestion-badge {
+  @apply bg-blue-50 text-blue-800 border border-blue-200;
+}
+
+@keyframes animate-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: animate-fadeIn 0.5s ease-out forwards;
+}
+
+/* Analysis section headers */
+.analysis-section-header {
+  @apply flex items-center gap-3 mt-6 mb-3 pb-2 border-b animate-fadeIn;
+  border-color: rgba(59, 130, 246, 0.1);
+}
+
+.analysis-section-header h3 {
+  @apply font-semibold text-base;
+}
+
+.analysis-section-header .section-icon {
+  @apply w-5 h-5 rounded-md flex-shrink-0;
+}
+
+.analysis-section-header.strengths h3 {
+  @apply text-emerald-700;
+}
+
+.analysis-section-header.strengths .section-icon {
+  @apply bg-emerald-500;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.analysis-section-header.weaknesses h3 {
+  @apply text-red-700;
+}
+
+.analysis-section-header.weaknesses .section-icon {
+  @apply bg-red-500;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.analysis-section-header.suggestions h3 {
+  @apply text-blue-700;
+}
+
+.analysis-section-header.suggestions .section-icon {
+  @apply bg-blue-500;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
 }

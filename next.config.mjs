@@ -9,6 +9,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  reactStrictMode: false,
+  poweredByHeader: false,
 }
 
 export default nextConfig

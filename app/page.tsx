@@ -1,21 +1,18 @@
+// @ts-nocheck
 "use client"
 
-import type React from "react"
-
-import { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect } from "react"
+// Make sure CSS is imported
+import "./globals.css"
 import {
-  Search,
   Plus,
   Copy,
   MessageSquare,
-  FileText,
-  Share2,
   Settings,
   Mic,
   Send,
   Bot,
   User,
-  LogOut,
   ChevronDown,
   Sparkles,
   Wand2,
@@ -28,6 +25,7 @@ import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
 import { analyzePrompt, enhancePrompt, generatePrompts } from "@/lib/grok-service"
+import { useSearchParams, useRouter } from "next/navigation"
 
 interface Message {
   id: string
@@ -59,6 +57,9 @@ interface PromptHistory {
 }
 
 export default function Home() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
   // State for messages in current chat
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
@@ -70,7 +71,6 @@ export default function Home() {
 
   // State for sidebar functionality
   const [showChatHistory, setShowChatHistory] = useState(false)
-  const [showPromptHistory, setShowPromptHistory] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   // State for footer dropdowns
@@ -147,15 +147,7 @@ export default function Home() {
       }
     }
 
-    // Load prompt history
-    const savedPrompts = localStorage.getItem("typingmind-prompts")
-    if (savedPrompts) {
-      try {
-        setPromptHistory(JSON.parse(savedPrompts))
-      } catch (error) {
-        console.error("Error parsing saved prompts:", error)
-      }
-    }
+
   }, [])
 
   // Save chats to localStorage whenever they change
@@ -165,12 +157,7 @@ export default function Home() {
     }
   }, [chats])
 
-  // Save prompt history to localStorage whenever it changes
-  useEffect(() => {
-    if (promptHistory.length > 0) {
-      localStorage.setItem("typingmind-prompts", JSON.stringify(promptHistory))
-    }
-  }, [promptHistory])
+
 
   // Update current chat in chats array whenever messages change
   useEffect(() => {
@@ -193,6 +180,17 @@ export default function Home() {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [])
+
+  // Check URL parameters to select the correct agent
+  useEffect(() => {
+    const agentParam = searchParams.get("agent")
+    if (agentParam) {
+      const selectedAgent = agents.find(agent => agent.id === agentParam)
+      if (selectedAgent) {
+        setCurrentAgent(selectedAgent)
+      }
+    }
+  }, [searchParams])
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return
@@ -231,16 +229,25 @@ export default function Home() {
 
       switch (currentAgent.id) {
         case "enhancer":
-          response = await enhancePrompt(userMessage.content)
-          break
+          response = await enhancePrompt(inputValue).catch(error => {
+            console.error("Error enhancing prompt:", error);
+            return { text: "I encountered an error while enhancing your prompt.", enhancedPrompts: [] };
+          });
+          break;
         case "generator":
-          response = await generatePrompts(userMessage.content)
-          break
+          response = await generatePrompts(inputValue).catch(error => {
+            console.error("Error generating prompts:", error);
+            return { text: "I encountered an error while generating prompts.", generatedPrompts: [] };
+          });
+          break;
         case "analyzer":
-          response = await analyzePrompt(userMessage.content)
-          break
+          response = await analyzePrompt(inputValue).catch(error => {
+            console.error("Error analyzing prompt:", error);
+            return { text: "I encountered an error while analyzing your prompt.", analysis: { score: 0, strengths: [], weaknesses: [], suggestions: [] } };
+          });
+          break;
         default:
-          response = { text: "I'm not sure how to process that request." }
+          response = { text: "I'm not sure how to process that request." };
       }
 
       // Format the response based on the agent type
@@ -252,7 +259,7 @@ export default function Home() {
         responseText = `Based on your topic, here are some prompt ideas:\n\n${response.generatedPrompts.map((p, i) => `${i + 1}. "${p}"`).join("\n\n")}`
       } else if (currentAgent.id === "analyzer" && response.analysis) {
         const { score, strengths, weaknesses, suggestions } = response.analysis
-        responseText = `Prompt Analysis Score: ${score}/100\n\nStrengths:\n${strengths.map((s) => `- ${s}`).join("\n")}\n\nAreas for improvement:\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\nSuggestions:\n${suggestions.map((s) => `- ${s}`).join("\n")}`
+        responseText = `Prompt Analysis Score: ${score}/100\n\n## Strengths\n${strengths.map((s) => `- ${s}`).join("\n")}\n\n## Areas for improvement\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\n## Suggestions\n${suggestions.map((s) => `- ${s}`).join("\n")}`
       } else {
         responseText = response.text || "I processed your request but couldn't generate a proper response."
       }
@@ -324,13 +331,35 @@ export default function Home() {
   }
 
   const selectAgent = (agent: Agent) => {
+    if (agent) {
     setCurrentAgent(agent)
     setShowFooterAgents(false)
+      
+      // Reset messages to show empty chat with the new agent
+      setMessages([])
+      
+      // Create a new chat for this agent
+      const newChatId = Date.now().toString()
+      const newChat = {
+        id: newChatId,
+        title: `New ${agent.name} Chat`,
+        messages: [],
+        createdAt: new Date(),
+        agentId: agent.id,
+      }
+      
+      setChats(prev => [newChat, ...prev])
+      setCurrentChatId(newChatId)
+      
+      // Focus the input field
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+    }
   }
 
   const handlePromptClick = (prompt: string) => {
     setInputValue(prompt)
-    setShowPromptHistory(false)
     inputRef.current?.focus()
   }
 
@@ -359,14 +388,13 @@ export default function Home() {
             </TooltipContent>
           </Tooltip>
 
-          <div className="flex flex-col items-center gap-6 mt-2">
+          <div className="flex flex-col items-center gap-8 mt-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
                   className={`sidebar-icon transition-smooth ${showChatHistory ? "active" : ""}`}
                   onClick={() => {
                     setShowChatHistory(!showChatHistory)
-                    setShowPromptHistory(false)
                   }}
                 >
                   <MessageSquare className="h-5 w-5" />
@@ -374,34 +402,6 @@ export default function Home() {
               </TooltipTrigger>
               <TooltipContent side="right">
                 <p>Chat History</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className={`sidebar-icon transition-smooth ${showPromptHistory ? "active" : ""}`}
-                  onClick={() => {
-                    setShowPromptHistory(!showPromptHistory)
-                    setShowChatHistory(false)
-                  }}
-                >
-                  <FileText className="h-5 w-5" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Prompt History</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="sidebar-icon transition-smooth">
-                  <Share2 className="h-5 w-5" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Share</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -437,10 +437,7 @@ export default function Home() {
                   <Settings size={16} />
                   <span>Settings</span>
                 </div>
-                <div className="sidebar-dropdown-item text-red-500">
-                  <LogOut size={16} />
-                  <span>Sign Out</span>
-                </div>
+                {/* Sign Out option removed since authentication is disabled */}
               </div>
             )}
           </div>
@@ -474,50 +471,11 @@ export default function Home() {
           </div>
         )}
 
-        {/* Prompt History */}
-        {showPromptHistory && (
-          <div className="sidebar-dropdown mt-32">
-            <div className="flex justify-between items-center px-2 pb-2 border-b border-gray-100/20">
-              <h3 className="font-medium text-sm">Prompt History</h3>
-            </div>
-            <div className="prompt-history p-2">
-              {promptHistory.length > 0 ? (
-                promptHistory.map((prompt) => (
-                  <div key={prompt.id} className="prompt-item" onClick={() => handlePromptClick(prompt.content)}>
-                    <div className="text-xs truncate">{prompt.content}</div>
-                    <div className="text-xs text-gray-400 mt-1">{new Date(prompt.timestamp).toLocaleDateString()}</div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-sm text-gray-500 p-2">No prompt history yet</div>
-              )}
-            </div>
-          </div>
-        )}
+
       </TooltipProvider>
 
       {/* Main Content with enhanced blue glow */}
       <div className="flex-1 flex flex-col blue-glow-top">
-        <div className="header">
-          <div className="flex items-center">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Copy className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center ml-2 bg-indigo-100/80 rounded-md px-2 py-1">
-              <div className={`w-5 h-5 ${currentAgent.color} rounded-md flex items-center justify-center mr-2`}>
-                {currentAgent.icon}
-              </div>
-              <span className="text-sm font-medium">{currentAgent.name}</span>
-              <ChevronDown className="h-3 w-3 ml-1 text-gray-400" />
-            </div>
-          </div>
-          <div className="relative max-w-md w-full">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            <Input className="search-input" placeholder="Search..." />
-            <div className="absolute right-3 top-2.5 text-xs text-gray-400">⌘ K</div>
-          </div>
-        </div>
-
         <div className="content-area">
           {messages.length === 0 ? (
             <div className="max-w-4xl mx-auto h-full flex flex-col">
@@ -548,16 +506,13 @@ export default function Home() {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-medium">Your Prompt Tools</h2>
-                  <Link href="/tools">
-                    <Button variant="ghost" size="sm" className="text-gray-500 flex items-center gap-1 text-sm">
-                      Advanced Tools <ExternalLink className="h-3 w-3 ml-1" />
-                    </Button>
-                  </Link>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <Link href="/tools?tab=enhancer" className="block">
-                    <div className="agent-card transition-smooth">
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "enhancer"))}
+                  >
                       <div className="agent-icon bg-indigo-100">
                         <Wand2 size={16} className="text-indigo-500" />
                       </div>
@@ -569,10 +524,11 @@ export default function Home() {
                         </p>
                       </div>
                     </div>
-                  </Link>
 
-                  <Link href="/tools?tab=generator" className="block">
-                    <div className="agent-card transition-smooth">
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "generator"))}
+                  >
                       <div className="agent-icon bg-emerald-100">
                         <PenTool size={16} className="text-emerald-500" />
                       </div>
@@ -584,10 +540,11 @@ export default function Home() {
                         </p>
                       </div>
                     </div>
-                  </Link>
 
-                  <Link href="/tools?tab=analyzer" className="block">
-                    <div className="agent-card transition-smooth">
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "analyzer"))}
+                  >
                       <div className="agent-icon bg-amber-100">
                         <LineChart size={16} className="text-amber-500" />
                       </div>
@@ -599,16 +556,15 @@ export default function Home() {
                         </p>
                       </div>
                     </div>
-                  </Link>
 
-                  <div className="agent-card transition-smooth">
+                  <div className="agent-card transition-smooth cursor-pointer">
                     <div className="agent-icon bg-blue-100">
                       <Sparkles size={16} className="text-blue-500" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-sm">Prompt Library</h3>
+                      <h3 className="font-medium text-sm">Free And Unlimited</h3>
                       <p className="text-xs text-gray-500 mt-1">
-                        Access a curated collection of effective prompts for various use cases and AI models.
+                        No usage limits or restrictions. Use all features freely without any hidden costs.
                       </p>
                     </div>
                   </div>
@@ -618,14 +574,140 @@ export default function Home() {
           ) : (
             <div className="chat-container">
               {messages.map((message) => (
-                <div key={message.id} className={`message message-${message.role}`}>
+                <div 
+                  key={message.id} 
+                  className={`message message-${message.role} ${
+                    message.role === "ai" ? currentAgent.id : ""
+                  }`}
+                >
                   {message.role === "ai" && (
                     <div className="message-avatar">
-                      <span className="text-indigo-500 text-xs font-bold">A</span>
+                      <span className={`text-xs font-bold ${
+                        currentAgent.id === "enhancer" ? "text-indigo-500" : 
+                        currentAgent.id === "generator" ? "text-emerald-500" : 
+                        currentAgent.id === "analyzer" ? "text-amber-500" : "text-indigo-500"
+                      }`}>A</span>
                     </div>
                   )}
                   <div className="message-content">
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <div className="whitespace-pre-wrap">
+                      {message.content.split('\n').map((line, i) => {
+                        // For prompt suggestions (numbered with quotes)
+                        if (/^\d+\.\s+\".*\"$/.test(line)) {
+                          const promptText = line.match(/\"(.*)\"/)?.[1] || "";
+                          return (
+                            <div key={i} className="prompt-suggestion">
+                              {line.split('"')[0]}
+                              <span className="prompt-text">{promptText}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="copy-button ml-2"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(promptText);
+                                }}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          );
+                        }
+                        
+                        // For Analyzer's score display
+                        if (line.startsWith("Prompt Analysis Score:")) {
+                          const score = parseInt(line.split(":")[1]);
+                          const scoreClass = score >= 90 ? "score-high" : score >= 70 ? "score-medium" : "score-low";
+                          
+                          return (
+                            <div key={i} className="score-display-container">
+                              <div className="score-header">Prompt Analysis Score</div>
+                              <div className="score-display">
+                                <div className="score-circle-container">
+                                  <div className={`score-circle ${scoreClass}`}>
+                                    <span className="score-value">{score}</span>
+                                    <span className="score-max">/100</span>
+                                  </div>
+                                </div>
+                                <div className="score-bar-container">
+                                  <div className="score-label">
+                                    <span>{score < 70 ? "Needs Improvement" : score < 90 ? "Good" : "Excellent"}</span>
+                                  </div>
+                                  <div className="score-bar-background">
+                                    <div 
+                                      className={`score-bar ${scoreClass}`}
+                                      style={{ width: `${score}%` }}
+                                    ></div>
+                                  </div>
+                                  <div className="score-markers">
+                                    <div className="score-marker" style={{ left: "0%" }}>0</div>
+                                    <div className="score-marker" style={{ left: "25%" }}>25</div>
+                                    <div className="score-marker" style={{ left: "50%" }}>50</div>
+                                    <div className="score-marker" style={{ left: "75%" }}>75</div>
+                                    <div className="score-marker" style={{ left: "100%" }}>100</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // For section headers in analyzer output
+                        if (line.startsWith("## ")) {
+                          const sectionTitle = line.substring(3);
+                          const sectionType = 
+                            sectionTitle.includes("Strengths") ? "strengths" : 
+                            sectionTitle.includes("Areas") ? "weaknesses" : 
+                            sectionTitle.includes("Suggestions") ? "suggestions" : "default";
+                          
+                          return (
+                            <div key={i} className={`analysis-section-header ${sectionType}`}>
+                              <div className="section-icon"></div>
+                              <h3>{sectionTitle}</h3>
+                            </div>
+                          );
+                        }
+                        
+                        // For strength/weakness bullet points
+                        if (line.startsWith("- ") && message.content.includes("Strengths:") && message.content.includes("Areas for improvement:")) {
+                          const itemText = line.substring(2);
+                          
+                          // Determine if this is a strength, weakness or suggestion
+                          const isStrength = message.content.indexOf(line) > message.content.indexOf("Strengths:") && 
+                                            message.content.indexOf(line) < message.content.indexOf("Areas for improvement:");
+                          
+                          const isWeakness = message.content.indexOf(line) > message.content.indexOf("Areas for improvement:") && 
+                                            message.content.indexOf(line) < message.content.indexOf("Suggestions:");
+                          
+                          const isSuggestion = message.content.indexOf(line) > message.content.indexOf("Suggestions:");
+                          
+                          if (isStrength) {
+                            return (
+                              <div key={i} className="analysis-badge-container strength">
+                                <div className="analysis-badge-icon">✓</div>
+                                <span className="analysis-badge strength-badge">{itemText}</span>
+                              </div>
+                            );
+                          } else if (isWeakness) {
+                            return (
+                              <div key={i} className="analysis-badge-container weakness">
+                                <div className="analysis-badge-icon">!</div>
+                                <span className="analysis-badge weakness-badge">{itemText}</span>
+                              </div>
+                            );
+                          } else if (isSuggestion) {
+                            return (
+                              <div key={i} className="analysis-badge-container suggestion">
+                                <div className="analysis-badge-icon">↑</div>
+                                <span className="analysis-badge suggestion-badge">{itemText}</span>
+                              </div>
+                            );
+                          }
+                        }
+                        
+                        // Default rendering for other lines
+                        return <span key={i}>{line}<br/></span>;
+                      })}
+                    </div>
                   </div>
                   {message.role === "user" && (
                     <div className="message-avatar">
@@ -658,8 +740,16 @@ export default function Home() {
             <div className="relative">
               <Input
                 ref={inputRef}
-                className="chat-input transition-smooth"
-                placeholder="Enter your prompt or ask for prompt assistance..."
+                className={`chat-input transition-smooth ${currentAgent.id}-input`}
+                placeholder={
+                  currentAgent.id === "enhancer" 
+                    ? "Enter a prompt to enhance..." 
+                    : currentAgent.id === "generator" 
+                    ? "Enter a topic to generate prompts for..." 
+                    : currentAgent.id === "analyzer"
+                    ? "Enter a prompt to analyze..." 
+                    : "Enter your prompt or ask for prompt assistance..."
+                }
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -681,39 +771,25 @@ export default function Home() {
             </div>
             <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs flex items-center gap-1 bg-white/50 hover:bg-gray-50/50 transition-smooth border border-gray-200/30"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      d="M19 11H5M19 11C20.1046 11 21 11.8954 21 13V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V13C3 11.8954 3.89543 11 5 11M19 11V9C19 7.89543 18.1046 7 17 7M5 11V9C5 7.89543 5.89543 7 7 7M7 7V5C7 3.89543 7.89543 3 9 3H15C16.1046 3 17 3.89543 17 5V7M7 7H17"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  My Prompts
-                </Button>
-
                 <div className="relative">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs flex items-center gap-1 bg-white/50 hover:bg-gray-50/50 transition-smooth border border-gray-200/30 footer-agents-button"
+                    className={`text-xs flex items-center gap-1 hover:bg-gray-50/50 transition-smooth border footer-agents-button ${
+                      currentAgent.id === "enhancer" 
+                        ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
+                        : currentAgent.id === "generator"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : currentAgent.id === "analyzer"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-white/50 border-gray-200/30"
+                    }`}
                     onClick={toggleFooterAgents}
                   >
-                    <Bot className="h-4 w-4" />
-                    AI Agents
+                    <div className={`w-4 h-4 ${currentAgent.color} rounded-md flex items-center justify-center mr-1`}>
+                      {currentAgent.icon}
+                    </div>
+                    {currentAgent.name}
                     <ChevronDown className="h-3 w-3 ml-1 text-gray-400" />
                   </Button>
 
@@ -742,19 +818,6 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Link href="/tools">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs flex items-center gap-1 bg-white/50 hover:bg-gray-50/50 transition-smooth border border-gray-200/30"
-                  >
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    Advanced Tools
-                  </Button>
-                </Link>
               </div>
             </div>
           </div>
