@@ -16,7 +16,6 @@ import {
   ChevronDown,
   Sparkles,
   Wand2,
-  PenTool,
   LineChart,
   ExternalLink,
 } from "lucide-react"
@@ -24,7 +23,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
-import { analyzePrompt, enhancePrompt, generatePrompts } from "@/lib/grok-service"
+import { analyzePrompt, enhancePrompt } from "@/lib/grok-service"
 import { useSearchParams, useRouter } from "next/navigation"
 
 interface Message {
@@ -91,7 +90,7 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Sample AI agents
+  // Sample AI agents (removed generator)
   const agents: Agent[] = [
     {
       id: "enhancer",
@@ -99,13 +98,6 @@ export default function Home() {
       icon: <Wand2 size={14} className="text-white" />,
       description: "Automatically rewrites prompts to be more detailed, creative, or direct.",
       color: "bg-indigo-500",
-    },
-    {
-      id: "generator",
-      name: "Prompt Generator",
-      icon: <PenTool size={14} className="text-white" />,
-      description: "Generates new prompts based on a topic, keyword, or goal.",
-      color: "bg-emerald-500",
     },
     {
       id: "analyzer",
@@ -234,12 +226,6 @@ export default function Home() {
             return { text: "I encountered an error while enhancing your prompt.", enhancedPrompts: [] };
           });
           break;
-        case "generator":
-          response = await generatePrompts(inputValue).catch(error => {
-            console.error("Error generating prompts:", error);
-            return { text: "I encountered an error while generating prompts.", generatedPrompts: [] };
-          });
-          break;
         case "analyzer":
           response = await analyzePrompt(inputValue).catch(error => {
             console.error("Error analyzing prompt:", error);
@@ -255,8 +241,6 @@ export default function Home() {
 
       if (currentAgent.id === "enhancer" && response.enhancedPrompts) {
         responseText = `Here are some enhanced versions of your prompt:\n\n${response.enhancedPrompts.map((p, i) => `${i + 1}. "${p}"`).join("\n\n")}`
-      } else if (currentAgent.id === "generator" && response.generatedPrompts) {
-        responseText = `Based on your topic, here are some prompt ideas:\n\n${response.generatedPrompts.map((p, i) => `${i + 1}. "${p}"`).join("\n\n")}`
       } else if (currentAgent.id === "analyzer" && response.analysis) {
         const { score, strengths, weaknesses, suggestions } = response.analysis
         responseText = `Prompt Analysis Score: ${score}/100\n\n## Strengths\n${strengths.map((s) => `- ${s}`).join("\n")}\n\n## Areas for improvement\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\n## Suggestions\n${suggestions.map((s) => `- ${s}`).join("\n")}`
@@ -527,22 +511,6 @@ export default function Home() {
 
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
-                    onClick={() => selectAgent(agents.find(agent => agent.id === "generator"))}
-                  >
-                      <div className="agent-icon bg-emerald-100">
-                        <PenTool size={16} className="text-emerald-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-sm">Prompt Generator</h3>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Generates new prompts based on topics or goals. Offers use-case templates for various AI
-                          platforms.
-                        </p>
-                      </div>
-                    </div>
-
-                  <div 
-                    className="agent-card transition-smooth cursor-pointer"
                     onClick={() => selectAgent(agents.find(agent => agent.id === "analyzer"))}
                   >
                       <div className="agent-icon bg-amber-100">
@@ -568,6 +536,18 @@ export default function Home() {
                       </p>
                     </div>
                   </div>
+
+                  <div className="agent-card transition-smooth cursor-pointer">
+                    <div className="agent-icon bg-green-100">
+                      <Sparkles size={16} className="text-green-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm">AI-Powered Analysis</h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Advanced AI algorithms analyze and enhance your prompts for maximum effectiveness.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -584,7 +564,6 @@ export default function Home() {
                     <div className="message-avatar">
                       <span className={`text-xs font-bold ${
                         currentAgent.id === "enhancer" ? "text-indigo-500" : 
-                        currentAgent.id === "generator" ? "text-emerald-500" : 
                         currentAgent.id === "analyzer" ? "text-amber-500" : "text-indigo-500"
                       }`}>A</span>
                     </div>
@@ -744,8 +723,6 @@ export default function Home() {
                 placeholder={
                   currentAgent.id === "enhancer" 
                     ? "Enter a prompt to enhance..." 
-                    : currentAgent.id === "generator" 
-                    ? "Enter a topic to generate prompts for..." 
                     : currentAgent.id === "analyzer"
                     ? "Enter a prompt to analyze..." 
                     : "Enter your prompt or ask for prompt assistance..."
@@ -778,8 +755,6 @@ export default function Home() {
                     className={`text-xs flex items-center gap-1 hover:bg-gray-50/50 transition-smooth border footer-agents-button ${
                       currentAgent.id === "enhancer" 
                         ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
-                        : currentAgent.id === "generator"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                         : currentAgent.id === "analyzer"
                         ? "bg-amber-50 text-amber-700 border-amber-200"
                         : "bg-white/50 border-gray-200/30"

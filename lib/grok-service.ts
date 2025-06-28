@@ -13,7 +13,6 @@ export interface GrokResponse {
     suggestions: string[]
   }
   enhancedPrompts?: string[]
-  generatedPrompts?: string[]
 }
 
 export interface GrokError {
@@ -25,11 +24,9 @@ export interface GrokError {
 // Main function to call Grok API
 export async function callGrokAPI(
   prompt: string,
-  mode: "analyze" | "enhance" | "generate",
+  mode: "analyze" | "enhance",
   options?: {
     toneStyle?: "formal" | "casual" | "creative" | "technical"
-    useCase?: string
-    maxResults?: number
   },
 ): Promise<GrokResponse> {
   try {
@@ -68,7 +65,7 @@ export async function callGrokAPI(
 }
 
 // Fallback responses for demo or when API is unavailable
-function getFallbackResponse(prompt: string, mode: "analyze" | "enhance" | "generate", options?: any): GrokResponse {
+function getFallbackResponse(prompt: string, mode: "analyze" | "enhance", options?: any): GrokResponse {
   switch (mode) {
     case "analyze":
       return {
@@ -142,76 +139,6 @@ function getFallbackResponse(prompt: string, mode: "analyze" | "enhance" | "gene
         enhancedPrompts,
       };
     }
-
-    case "generate": {
-      const topic = prompt.trim();
-      const useCase = options?.useCase || "general";
-      const maxResults = options?.maxResults || 3;
-      
-      // Create an array to hold all possible prompt templates
-      const promptTemplates: string[] = [
-        // Educational prompts
-        `Create a comprehensive guide about ${topic} that includes historical context, current applications, and future trends. Format as a structured article with headings and bullet points for key takeaways. Include at least 3 real-world examples and address common misconceptions.`,
-        
-        `I need to create educational content about ${topic} for beginners. Please explain the fundamental concepts, terminology, and principles in simple language. Include visual analogies, everyday examples, and a "frequently asked questions" section to address common points of confusion.`,
-        
-        `Develop a detailed tutorial on ${topic} suitable for intermediate learners. Structure it as a progressive learning journey with clear prerequisites, learning objectives, practical exercises, and assessment questions. Include code samples, diagrams, or formulas where relevant.`,
-        
-        // Creative prompts
-        `Generate creative content about ${topic} that blends factual information with engaging storytelling. Use narrative techniques, metaphors, and scenario-based examples to make the subject come alive. Include thought-provoking questions and interactive elements.`,
-        
-        `Design a unique perspective on ${topic} that challenges conventional thinking. Explore contrarian viewpoints, historical shifts in understanding, and emerging trends. Present multiple mental models and frameworks for understanding the subject in novel ways.`,
-        
-        // Analytical prompts
-        `Provide a systems analysis of ${topic} examining its components, relationships, and emergent properties. Identify key stakeholders, feedback loops, leverage points, and potential future developments. Use precise terminology and evidence-based reasoning.`,
-        
-        `Conduct a comparative analysis of different approaches to ${topic}. Evaluate at least 4 distinct methodologies using criteria such as effectiveness, efficiency, scalability, and accessibility. Create a decision matrix to help readers select the most appropriate approach for their specific context.`,
-        
-        `Perform a critical examination of ${topic} identifying strengths, limitations, and gaps in current understanding. Address methodological challenges, contradictory evidence, and unresolved questions. Suggest directions for further inquiry and development.`,
-        
-        // Practical application prompts
-        `Create a practical implementation guide for ${topic} with step-by-step instructions, resource requirements, and expected outcomes. Include troubleshooting advice, optimization techniques, and quality assurance methods. Address variations for different environments or constraints.`,
-        
-        `Develop a problem-solving framework for addressing challenges related to ${topic}. Structure it as a decision tree with diagnostic questions, solution pathways, and evaluation criteria. Include case studies demonstrating successful application in diverse contexts.`,
-        
-        // Interdisciplinary prompts
-        `Explore ${topic} through multiple disciplinary lenses including [select relevant: scientific, technological, economic, social, ethical, historical, cultural] perspectives. Analyze how different fields contribute to our understanding and identify opportunities for interdisciplinary integration.`,
-        
-        `Examine the intersection of ${topic} with emerging technologies such as artificial intelligence, blockchain, biotechnology, or quantum computing. Identify synergies, novel applications, and potential transformative impacts. Consider both near-term developments and long-range possibilities.`
-      ];
-      
-      // Select prompts based on the useCase if specified
-      let selectedPrompts: string[] = [];
-      
-      if (useCase === "educational" || useCase === "learning") {
-        selectedPrompts = promptTemplates.slice(0, 3);
-      } else if (useCase === "creative") {
-        selectedPrompts = promptTemplates.slice(3, 5);
-      } else if (useCase === "analytical") {
-        selectedPrompts = promptTemplates.slice(5, 8);
-      } else if (useCase === "practical" || useCase === "implementation") {
-        selectedPrompts = promptTemplates.slice(8, 10);
-      } else if (useCase === "interdisciplinary") {
-        selectedPrompts = promptTemplates.slice(10, 12);
-      } else {
-        // For general case, select a diverse mix
-        selectedPrompts = [
-          promptTemplates[0],  // Educational
-          promptTemplates[3],  // Creative
-          promptTemplates[5],  // Analytical
-          promptTemplates[8],  // Practical
-          promptTemplates[10], // Interdisciplinary
-        ];
-      }
-      
-      // Ensure we don't return more than maxResults
-      selectedPrompts = selectedPrompts.slice(0, maxResults);
-
-      return {
-        text: prompt,
-        generatedPrompts: selectedPrompts,
-      };
-      }
   }
 }
 
@@ -222,8 +149,4 @@ export function analyzePrompt(prompt: string) {
 
 export function enhancePrompt(prompt: string, toneStyle?: "formal" | "casual" | "creative" | "technical") {
   return callGrokAPI(prompt, "enhance", { toneStyle })
-}
-
-export function generatePrompts(topic: string, useCase?: string, maxResults = 3) {
-  return callGrokAPI(topic, "generate", { useCase, maxResults })
 }
