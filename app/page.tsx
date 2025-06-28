@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
-import { analyzePrompt, enhancePrompt } from "@/lib/grok-service"
+import { analyzePrompt, enhancePrompt } from "@/lib/groq-service"
 import { useSearchParams, useRouter } from "next/navigation"
 
 interface Message {
@@ -216,14 +216,14 @@ export default function Home() {
     setIsTyping(true)
 
     try {
-      // Use the Grok API based on the current agent
+      // Use the Groq API based on the current agent
       let response
 
       switch (currentAgent.id) {
         case "enhancer":
           response = await enhancePrompt(inputValue).catch(error => {
             console.error("Error enhancing prompt:", error);
-            return { text: "I encountered an error while enhancing your prompt.", enhancedPrompts: [] };
+            return { text: "I encountered an error while enhancing your prompt.", enhancedPrompt: "" };
           });
           break;
         case "analyzer":
@@ -239,8 +239,8 @@ export default function Home() {
       // Format the response based on the agent type
       let responseText = ""
 
-      if (currentAgent.id === "enhancer" && response.enhancedPrompts) {
-        responseText = `Here are some enhanced versions of your prompt:\n\n${response.enhancedPrompts.map((p, i) => `${i + 1}. "${p}"`).join("\n\n")}`
+      if (currentAgent.id === "enhancer" && response.enhancedPrompt) {
+        responseText = `Here's your enhanced prompt:\n\n"${response.enhancedPrompt}"`
       } else if (currentAgent.id === "analyzer" && response.analysis) {
         const { score, strengths, weaknesses, suggestions } = response.analysis
         responseText = `Prompt Analysis Score: ${score}/100\n\n## Strengths\n${strengths.map((s) => `- ${s}`).join("\n")}\n\n## Areas for improvement\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\n## Suggestions\n${suggestions.map((s) => `- ${s}`).join("\n")}`
@@ -261,7 +261,7 @@ export default function Home() {
         setIsTyping(false)
       }, 1000) // Small delay for natural feel
     } catch (error) {
-      console.error("Error processing with Grok API:", error)
+      console.error("Error processing with Groq API:", error)
 
       // Fallback response
       const aiMessage: Message = {
@@ -571,23 +571,33 @@ export default function Home() {
                   <div className="message-content">
                     <div className="whitespace-pre-wrap">
                       {message.content.split('\n').map((line, i) => {
-                        // For prompt suggestions (numbered with quotes)
-                        if (/^\d+\.\s+\".*\"$/.test(line)) {
-                          const promptText = line.match(/\"(.*)\"/)?.[1] || "";
+                        // For enhanced prompt display (single output)
+                        if (line.startsWith("Here's your enhanced prompt:")) {
+                          return <div key={i} className="font-medium text-indigo-700 mb-2">{line}</div>;
+                        }
+                        
+                        // For enhanced prompt content (quoted text)
+                        if (line.startsWith('"') && line.endsWith('"')) {
+                          const promptText = line.slice(1, -1); // Remove quotes
                           return (
-                            <div key={i} className="prompt-suggestion">
-                              {line.split('"')[0]}
-                              <span className="prompt-text">{promptText}</span>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="copy-button ml-2"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(promptText);
-                                }}
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
+                            <div key={i} className="enhanced-prompt-display">
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 my-3">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <p className="text-sm text-indigo-900">{promptText}</p>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="ml-2 flex-shrink-0"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(promptText);
+                                    }}
+                                  >
+                                    <Copy className="h-4 w-4 text-indigo-600" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
                           );
                         }
