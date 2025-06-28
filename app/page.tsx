@@ -20,12 +20,13 @@ import {
   ExternalLink,
   Key,
   AlertCircle,
+  PenTool,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
-import { analyzePrompt, enhancePrompt } from "@/lib/groq-service"
+import { analyzePrompt, enhancePrompt, processHandwriting } from "@/lib/groq-service"
 import { useSearchParams, useRouter } from "next/navigation"
 
 interface Message {
@@ -95,7 +96,7 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Sample AI agents (removed generator)
+  // Sample AI agents (added handwriting assistant)
   const agents: Agent[] = [
     {
       id: "enhancer",
@@ -110,6 +111,13 @@ export default function Home() {
       icon: <LineChart size={14} className="text-white" />,
       description: "Rates prompt quality based on clarity, specificity, and effectiveness.",
       color: "bg-amber-500",
+    },
+    {
+      id: "handwriting",
+      name: "Handwriting Assistant",
+      icon: <PenTool size={14} className="text-white" />,
+      description: "Continue writing, fix grammar, shorten text, or create summaries.",
+      color: "bg-green-500",
     },
   ]
 
@@ -239,6 +247,14 @@ export default function Home() {
             return { text: "I encountered an error while analyzing your prompt.", analysis: { score: 0, strengths: [], weaknesses: [], suggestions: [] } };
           });
           break;
+        case "handwriting":
+          // For handwriting assistant, we'll default to "continue" action
+          // In a real implementation, you might want to detect the intent or ask the user
+          response = await processHandwriting(inputValue, "continue").catch(error => {
+            console.error("Error processing handwriting:", error);
+            return { text: "I encountered an error while processing your text.", processedText: "" };
+          });
+          break;
         default:
           response = { text: "I'm not sure how to process that request." };
       }
@@ -251,6 +267,8 @@ export default function Home() {
       } else if (currentAgent.id === "analyzer" && response.analysis) {
         const { score, strengths, weaknesses, suggestions } = response.analysis
         responseText = `Prompt Analysis Score: ${score}/100\n\n## Strengths\n${strengths.map((s) => `- ${s}`).join("\n")}\n\n## Areas for improvement\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\n## Suggestions\n${suggestions.map((s) => `- ${s}`).join("\n")}`
+      } else if (currentAgent.id === "handwriting" && response.processedText) {
+        responseText = `Here's the continued text:\n\n${response.processedText}`
       } else {
         responseText = response.text || "I processed your request but couldn't generate a proper response."
       }
@@ -546,21 +564,24 @@ export default function Home() {
                       </div>
                     </div>
 
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "handwriting"))}
+                  >
+                      <div className="agent-icon bg-green-100">
+                        <PenTool size={16} className="text-green-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Handwriting Assistant</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Continue writing, fix grammar, shorten text, or create summaries with AI assistance.
+                        </p>
+                      </div>
+                    </div>
+
                   <div className="agent-card transition-smooth cursor-pointer">
                     <div className="agent-icon bg-blue-100">
                       <Sparkles size={16} className="text-blue-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-sm">Free And Unlimited</h3>
-                      <p className="text-xs text-gray-500 mt-1">
-                        No usage limits or restrictions. Use all features freely without any hidden costs.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="agent-card transition-smooth cursor-pointer">
-                    <div className="agent-icon bg-green-100">
-                      <Sparkles size={16} className="text-green-500" />
                     </div>
                     <div>
                       <h3 className="font-medium text-sm">AI-Powered Analysis</h3>
@@ -585,7 +606,8 @@ export default function Home() {
                     <div className="message-avatar">
                       <span className={`text-xs font-bold ${
                         currentAgent.id === "enhancer" ? "text-indigo-500" : 
-                        currentAgent.id === "analyzer" ? "text-amber-500" : "text-indigo-500"
+                        currentAgent.id === "analyzer" ? "text-amber-500" : 
+                        currentAgent.id === "handwriting" ? "text-green-500" : "text-indigo-500"
                       }`}>A</span>
                     </div>
                   )}
@@ -593,7 +615,7 @@ export default function Home() {
                     <div className="whitespace-pre-wrap">
                       {message.content.split('\n').map((line, i) => {
                         // For enhanced prompt display (single output)
-                        if (line.startsWith("Here's your enhanced prompt:")) {
+                        if (line.startsWith("Here's your enhanced prompt:") || line.startsWith("Here's the continued text:")) {
                           return <div key={i} className="font-medium text-indigo-700 mb-2">{line}</div>;
                         }
                         
@@ -756,6 +778,8 @@ export default function Home() {
                     ? "Enter a prompt to enhance..." 
                     : currentAgent.id === "analyzer"
                     ? "Enter a prompt to analyze..." 
+                    : currentAgent.id === "handwriting"
+                    ? "Enter text to continue, fix, shorten, or summarize..."
                     : "Enter your prompt or ask for prompt assistance..."
                 }
                 value={inputValue}
@@ -788,6 +812,8 @@ export default function Home() {
                         ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
                         : currentAgent.id === "analyzer"
                         ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : currentAgent.id === "handwriting"
+                        ? "bg-green-50 text-green-700 border-green-200"
                         : "bg-white/50 border-gray-200/30"
                     }`}
                     onClick={toggleFooterAgents}

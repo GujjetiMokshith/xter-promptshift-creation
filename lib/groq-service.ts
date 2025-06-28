@@ -15,6 +15,7 @@ export interface GroqResponse {
     suggestions: string[]
   }
   enhancedPrompt?: string
+  processedText?: string
 }
 
 export interface GroqError {
@@ -26,9 +27,10 @@ export interface GroqError {
 // Main function to call Groq API
 export async function callGroqAPI(
   prompt: string,
-  mode: "analyze" | "enhance",
+  mode: "analyze" | "enhance" | "handwriting",
   options?: {
     toneStyle?: "formal" | "casual" | "creative" | "technical"
+    actionType?: "continue" | "grammar" | "shorten" | "summarize"
   },
 ): Promise<GroqResponse> {
   try {
@@ -144,6 +146,97 @@ Provide your analysis in this exact JSON format:
       }
     }
 
+    else if (mode === "handwriting") {
+      const actionType = options?.actionType || "continue";
+      
+      let systemPrompt = "";
+      
+      switch (actionType) {
+        case "continue":
+          systemPrompt = `You are an expert writing assistant. Your task is to continue the given text naturally, maintaining the same tone, style, and voice as the original author.
+
+CONTINUATION GUIDELINES:
+1. Analyze the writing style, tone, and voice of the original text
+2. Maintain consistency in perspective (first person, third person, etc.)
+3. Continue the narrative or argument logically
+4. Match the complexity and vocabulary level
+5. Preserve the author's unique voice and personality
+6. Add meaningful content that advances the topic or story
+7. Aim for 2-3 times the length of the original text
+
+Return ONLY the continuation text, starting where the original text left off. Do not include the original text or any explanations.`;
+          break;
+          
+        case "grammar":
+          systemPrompt = `You are an expert editor and proofreader. Your task is to fix grammar, spelling, punctuation, and improve sentence structure while preserving the original meaning and voice.
+
+EDITING GUIDELINES:
+1. Correct all grammatical errors and typos
+2. Fix punctuation and capitalization issues
+3. Improve sentence structure and flow
+4. Enhance clarity without changing meaning
+5. Maintain the author's original tone and style
+6. Fix awkward phrasing and word choice
+7. Ensure consistency in tense and voice
+
+Return ONLY the corrected and improved text. Do not add explanations or comments.`;
+          break;
+          
+        case "shorten":
+          systemPrompt = `You are an expert editor specializing in concise writing. Your task is to shorten the given text while preserving all essential information and maintaining clarity.
+
+SHORTENING GUIDELINES:
+1. Remove redundant words and phrases
+2. Combine related sentences
+3. Eliminate unnecessary adjectives and adverbs
+4. Use more concise expressions
+5. Maintain all key information and meaning
+6. Preserve the original tone and style
+7. Aim for 40-60% of the original length
+
+Return ONLY the shortened text. Do not add explanations or comments.`;
+          break;
+          
+        case "summarize":
+          systemPrompt = `You are an expert at creating clear, comprehensive summaries. Your task is to distill the given text into its most important points and key information.
+
+SUMMARIZATION GUIDELINES:
+1. Identify and include all main points
+2. Preserve key details and supporting information
+3. Maintain logical flow and structure
+4. Use clear, concise language
+5. Ensure the summary stands alone
+6. Capture the essence and tone of the original
+7. Aim for 20-30% of the original length
+
+Return ONLY the summary. Do not add explanations or comments.`;
+          break;
+      }
+
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        model: "llama-3.1-8b-instant",
+        temperature: actionType === "grammar" ? 0.3 : 0.7,
+        max_tokens: actionType === "continue" ? 2000 : 1500,
+      });
+
+      const processedText = completion.choices[0]?.message?.content?.trim() || prompt;
+
+      return {
+        text: prompt,
+        processedText
+      };
+    }
+
     return getEnhancedFallbackResponse(prompt, mode, options);
     
   } catch (error) {
@@ -153,7 +246,7 @@ Provide your analysis in this exact JSON format:
 }
 
 // Enhanced fallback responses that provide much better examples
-function getEnhancedFallbackResponse(prompt: string, mode: "analyze" | "enhance", options?: any): GroqResponse {
+function getEnhancedFallbackResponse(prompt: string, mode: "analyze" | "enhance" | "handwriting", options?: any): GroqResponse {
   switch (mode) {
     case "analyze":
       // Analyze the prompt characteristics to give more accurate feedback
@@ -398,6 +491,78 @@ Include specific examples, actionable insights, and ensure the response is compr
       };
     }
 
+    case "handwriting": {
+      const actionType = options?.actionType || "continue";
+      let processedText = "";
+      
+      switch (actionType) {
+        case "continue":
+          // Analyze the text and continue it naturally
+          if (prompt.toLowerCase().includes("artificial intelligence") || prompt.toLowerCase().includes("ai")) {
+            processedText = `The rapid advancement of artificial intelligence continues to reshape industries and redefine human-machine collaboration. As we move forward, the integration of AI systems into daily workflows becomes increasingly seamless, offering unprecedented opportunities for innovation and efficiency.
+
+Machine learning algorithms are becoming more sophisticated, capable of understanding context and nuance in ways that were previously impossible. This evolution enables AI to assist in complex decision-making processes, from medical diagnoses to financial planning, while maintaining the human element that ensures ethical considerations remain at the forefront.
+
+The future of AI lies not in replacement of human capabilities, but in augmentation—creating powerful partnerships between human creativity and machine precision that unlock new possibilities across every sector of society.`;
+          } else {
+            processedText = `${prompt.trim()} This continuation maintains the original tone and style while expanding on the key themes presented. The narrative flows naturally from the established foundation, building upon the initial concepts with additional depth and context.
+
+Further development of these ideas reveals new perspectives and opportunities for exploration. Each element connects meaningfully to create a cohesive whole that advances the original intent while providing fresh insights and practical applications.`;
+          }
+          break;
+          
+        case "grammar":
+          // Fix common grammar issues in a sample way
+          processedText = prompt
+            .replace(/\bi\b/g, "I")
+            .replace(/\bits\b/g, "it's")
+            .replace(/\byour\b/g, "you're")
+            .replace(/\bthere\b/g, "their")
+            .replace(/\.\s*([a-z])/g, (match, letter) => `. ${letter.toUpperCase()}`)
+            .replace(/\s+/g, " ")
+            .trim();
+          
+          // If no changes were made, provide a polished version
+          if (processedText === prompt) {
+            processedText = `${prompt.trim().charAt(0).toUpperCase()}${prompt.trim().slice(1)}`;
+            if (!processedText.endsWith('.') && !processedText.endsWith('!') && !processedText.endsWith('?')) {
+              processedText += '.';
+            }
+          }
+          break;
+          
+        case "shorten":
+          // Create a shortened version
+          const sentences = prompt.split(/[.!?]+/).filter(s => s.trim());
+          const keyWords = prompt.split(/\s+/).filter(word => 
+            word.length > 4 && 
+            !['that', 'this', 'with', 'from', 'they', 'have', 'been', 'will', 'were', 'said'].includes(word.toLowerCase())
+          );
+          
+          if (sentences.length > 1) {
+            processedText = sentences.slice(0, Math.ceil(sentences.length / 2)).join('. ').trim() + '.';
+          } else {
+            processedText = keyWords.slice(0, Math.ceil(keyWords.length * 0.6)).join(' ') + '.';
+          }
+          break;
+          
+        case "summarize":
+          // Create a summary
+          const wordCount = prompt.split(/\s+/).length;
+          if (wordCount > 50) {
+            processedText = `This text discusses the main concepts and key points presented in the original content. The primary focus centers on the core themes and essential information, distilled into a concise overview that captures the fundamental ideas and their significance.`;
+          } else {
+            processedText = `Summary: ${prompt.split(/\s+/).slice(0, Math.ceil(prompt.split(/\s+/).length * 0.3)).join(' ')}...`;
+          }
+          break;
+      }
+      
+      return {
+        text: prompt,
+        processedText,
+      };
+    }
+
     default:
       return { text: prompt };
   }
@@ -410,4 +575,8 @@ export function analyzePrompt(prompt: string) {
 
 export function enhancePrompt(prompt: string, toneStyle?: "formal" | "casual" | "creative" | "technical") {
   return callGroqAPI(prompt, "enhance", { toneStyle })
+}
+
+export function processHandwriting(text: string, actionType: "continue" | "grammar" | "shorten" | "summarize") {
+  return callGroqAPI(text, "handwriting", { actionType })
 }
