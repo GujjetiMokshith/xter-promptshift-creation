@@ -1,9 +1,9 @@
 "use client"
 
 import React, { useState } from "react"
-import { PenTool, ArrowRight, FileText, BookOpen, Home, Wand2, CheckCircle, Scissors, Copy, Loader2, Sparkles, Star, Zap } from "lucide-react"
+import { PenTool, ArrowRight, FileText, BookOpen, Home, Wand2, CheckCircle, Scissors, Copy, Loader2, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
@@ -75,133 +75,84 @@ export default function HandwritingPage() {
     navigator.clipboard.writeText(text)
   }
 
+  const getWordCount = (text: string) => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse animation-delay-2000"></div>
-        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse animation-delay-4000"></div>
-      </div>
-
-      <div className="relative z-10 container mx-auto px-4 py-8">
-        {/* Enhanced Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-lg opacity-75"></div>
-              <div className="relative p-4 bg-white rounded-full shadow-xl">
-                <PenTool className="h-10 w-10 text-blue-600" />
-              </div>
-            </div>
-            <div className="text-left">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                AI Writing Studio
-              </h1>
-              <p className="text-lg text-gray-600 mt-1">Professional writing tools powered by artificial intelligence</p>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-6">
+        {/* Simple Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <PenTool className="h-6 w-6 text-blue-600" />
+            <h1 className="text-2xl font-bold text-gray-900">AI Writing Tools</h1>
           </div>
-          
-          <div className="flex items-center justify-center gap-6 mb-8">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm">
-              <Sparkles className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm font-medium text-gray-700">AI-Powered</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm">
-              <Zap className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium text-gray-700">Instant Results</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm">
-              <Star className="h-4 w-4 text-purple-500" />
-              <span className="text-sm font-medium text-gray-700">Professional Quality</span>
-            </div>
-          </div>
-
           <Link href="/">
-            <Button variant="outline" className="bg-white/80 backdrop-blur-sm hover:bg-white/90 border-gray-200 shadow-sm">
+            <Button variant="outline" size="sm">
               <Home className="h-4 w-4 mr-2" />
-              Back to Main App
+              Back
             </Button>
           </Link>
         </div>
 
-        {/* Enhanced Three-Panel Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        {/* Three-Panel Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           
           {/* Tool 1: Continue Writing */}
-          <Card className="group border-0 shadow-xl bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5"></div>
-            <CardHeader className="relative bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                  <ArrowRight className="h-6 w-6" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold">Continue Writing</CardTitle>
-                  <CardDescription className="text-blue-100 text-sm">
-                    AI continues your text naturally
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-white/20 text-white border-white/30 text-xs">
-                  Style Analysis
-                </Badge>
-                <Badge className="bg-white/20 text-white border-white/30 text-xs">
-                  Natural Flow
-                </Badge>
-              </div>
+          <Card className="shadow-sm border-blue-200">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg flex items-center gap-2 text-blue-700">
+                <ArrowRight className="h-5 w-5" />
+                Continue Writing
+              </CardTitle>
             </CardHeader>
-            <CardContent className="relative p-6 space-y-4">
-              <div className="space-y-3">
-                <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Wand2 className="h-4 w-4 text-blue-500" />
-                  Your Text
-                </Label>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Your Text</Label>
                 <Textarea
-                  placeholder="Start writing something and AI will continue it naturally, maintaining your unique style and voice..."
-                  className="min-h-[140px] resize-none border-blue-200 focus:border-blue-400 text-sm leading-relaxed bg-white/80 backdrop-blur-sm"
+                  placeholder="Start writing and AI will continue..."
+                  className="min-h-[120px] resize-none text-sm"
                   value={tool1Input}
                   onChange={(e) => setTool1Input(e.target.value)}
                 />
                 {tool1Input.trim() && (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                      {tool1Input.trim().split(/\s+/).length} words
-                    </Badge>
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                      {tool1Input.length} characters
-                    </Badge>
-                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {getWordCount(tool1Input)} words
+                  </Badge>
                 )}
               </div>
 
-              <Button
-                onClick={handleTool1Process}
-                disabled={!tool1Input.trim() || tool1Loading}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
-                size="lg"
-              >
-                {tool1Loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing & Continuing...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Continue Writing
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTool1Input("")}
+                  disabled={!tool1Input.trim() || tool1Loading}
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+                <Button
+                  onClick={handleTool1Process}
+                  disabled={!tool1Input.trim() || tool1Loading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  size="sm"
+                >
+                  {tool1Loading ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <>
+                      <Wand2 className="h-3 w-3 mr-1" />
+                      Continue
+                    </>
+                  )}
+                </Button>
+              </div>
 
               {tool1Output && (
-                <div className="space-y-3 pt-4 border-t border-gray-100">
-                  <Label className="text-sm font-semibold text-green-700 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    AI Continuation
-                  </Label>
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 shadow-inner">
+                <div className="space-y-2 pt-3 border-t">
+                  <Label className="text-sm font-medium text-green-700">Result</Label>
+                  <div className="bg-green-50 border border-green-200 rounded p-3">
                     <p className="text-sm text-green-900 whitespace-pre-wrap leading-relaxed">
                       {tool1Output}
                     </p>
@@ -210,10 +161,10 @@ export default function HandwritingPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => copyToClipboard(tool1Output)}
-                    className="w-full flex items-center gap-2 bg-white/80 hover:bg-white border-green-200 text-green-700 hover:text-green-800"
+                    className="w-full"
                   >
-                    <Copy className="h-4 w-4" />
-                    Copy Result
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
                   </Button>
                 </div>
               )}
@@ -221,79 +172,59 @@ export default function HandwritingPage() {
           </Card>
 
           {/* Tool 2: Grammar Fixer */}
-          <Card className="group border-0 shadow-xl bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-green-500/5"></div>
-            <CardHeader className="relative bg-gradient-to-r from-emerald-500 to-green-500 text-white">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                  <CheckCircle className="h-6 w-6" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold">Grammar Fixer</CardTitle>
-                  <CardDescription className="text-emerald-100 text-sm">
-                    Fix grammar, spelling & style
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-white/20 text-white border-white/30 text-xs">
-                  Error Detection
-                </Badge>
-                <Badge className="bg-white/20 text-white border-white/30 text-xs">
-                  Style Enhancement
-                </Badge>
-              </div>
+          <Card className="shadow-sm border-emerald-200">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg flex items-center gap-2 text-emerald-700">
+                <CheckCircle className="h-5 w-5" />
+                Grammar Fixer
+              </CardTitle>
             </CardHeader>
-            <CardContent className="relative p-6 space-y-4">
-              <div className="space-y-3">
-                <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-emerald-500" />
-                  Text to Fix
-                </Label>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Text to Fix</Label>
                 <Textarea
-                  placeholder="Paste text with grammar issues here and AI will fix them while preserving your original meaning..."
-                  className="min-h-[140px] resize-none border-emerald-200 focus:border-emerald-400 text-sm leading-relaxed bg-white/80 backdrop-blur-sm"
+                  placeholder="Paste text with grammar issues..."
+                  className="min-h-[120px] resize-none text-sm"
                   value={tool2Input}
                   onChange={(e) => setTool2Input(e.target.value)}
                 />
                 {tool2Input.trim() && (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
-                      {tool2Input.trim().split(/\s+/).length} words
-                    </Badge>
-                    <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
-                      {tool2Input.length} characters
-                    </Badge>
-                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {getWordCount(tool2Input)} words
+                  </Badge>
                 )}
               </div>
 
-              <Button
-                onClick={handleTool2Process}
-                disabled={!tool2Input.trim() || tool2Loading}
-                className="w-full bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
-                size="lg"
-              >
-                {tool2Loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing & Fixing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Fix Grammar
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTool2Input("")}
+                  disabled={!tool2Input.trim() || tool2Loading}
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+                <Button
+                  onClick={handleTool2Process}
+                  disabled={!tool2Input.trim() || tool2Loading}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                  size="sm"
+                >
+                  {tool2Loading ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Fix
+                    </>
+                  )}
+                </Button>
+              </div>
 
               {tool2Output && (
-                <div className="space-y-3 pt-4 border-t border-gray-100">
-                  <Label className="text-sm font-semibold text-green-700 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Fixed Text
-                  </Label>
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 shadow-inner">
+                <div className="space-y-2 pt-3 border-t">
+                  <Label className="text-sm font-medium text-green-700">Result</Label>
+                  <div className="bg-green-50 border border-green-200 rounded p-3">
                     <p className="text-sm text-green-900 whitespace-pre-wrap leading-relaxed">
                       {tool2Output}
                     </p>
@@ -302,10 +233,10 @@ export default function HandwritingPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => copyToClipboard(tool2Output)}
-                    className="w-full flex items-center gap-2 bg-white/80 hover:bg-white border-green-200 text-green-700 hover:text-green-800"
+                    className="w-full"
                   >
-                    <Copy className="h-4 w-4" />
-                    Copy Result
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
                   </Button>
                 </div>
               )}
@@ -313,79 +244,59 @@ export default function HandwritingPage() {
           </Card>
 
           {/* Tool 3: Text Summarizer */}
-          <Card className="group border-0 shadow-xl bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5"></div>
-            <CardHeader className="relative bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                  <Scissors className="h-6 w-6" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold">Text Summarizer</CardTitle>
-                  <CardDescription className="text-purple-100 text-sm">
-                    Create concise summaries
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-white/20 text-white border-white/30 text-xs">
-                  Key Extraction
-                </Badge>
-                <Badge className="bg-white/20 text-white border-white/30 text-xs">
-                  Smart Compression
-                </Badge>
-              </div>
+          <Card className="shadow-sm border-purple-200">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg flex items-center gap-2 text-purple-700">
+                <Scissors className="h-5 w-5" />
+                Summarizer
+              </CardTitle>
             </CardHeader>
-            <CardContent className="relative p-6 space-y-4">
-              <div className="space-y-3">
-                <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-purple-500" />
-                  Long Text
-                </Label>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Long Text</Label>
                 <Textarea
-                  placeholder="Paste long text here to create a summary or shortened version while preserving key information..."
-                  className="min-h-[140px] resize-none border-purple-200 focus:border-purple-400 text-sm leading-relaxed bg-white/80 backdrop-blur-sm"
+                  placeholder="Paste long text to summarize..."
+                  className="min-h-[120px] resize-none text-sm"
                   value={tool3Input}
                   onChange={(e) => setTool3Input(e.target.value)}
                 />
                 {tool3Input.trim() && (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                      {tool3Input.trim().split(/\s+/).length} words
-                    </Badge>
-                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                      {tool3Input.length} characters
-                    </Badge>
-                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {getWordCount(tool3Input)} words
+                  </Badge>
                 )}
               </div>
 
-              <Button
-                onClick={handleTool3Process}
-                disabled={!tool3Input.trim() || tool3Loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
-                size="lg"
-              >
-                {tool3Loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing & Summarizing...
-                  </>
-                ) : (
-                  <>
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Summarize Text
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTool3Input("")}
+                  disabled={!tool3Input.trim() || tool3Loading}
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+                <Button
+                  onClick={handleTool3Process}
+                  disabled={!tool3Input.trim() || tool3Loading}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  size="sm"
+                >
+                  {tool3Loading ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <>
+                      <BookOpen className="h-3 w-3 mr-1" />
+                      Summarize
+                    </>
+                  )}
+                </Button>
+              </div>
 
               {tool3Output && (
-                <div className="space-y-3 pt-4 border-t border-gray-100">
-                  <Label className="text-sm font-semibold text-green-700 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Summary
-                  </Label>
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 shadow-inner">
+                <div className="space-y-2 pt-3 border-t">
+                  <Label className="text-sm font-medium text-green-700">Result</Label>
+                  <div className="bg-green-50 border border-green-200 rounded p-3">
                     <p className="text-sm text-green-900 whitespace-pre-wrap leading-relaxed">
                       {tool3Output}
                     </p>
@@ -394,71 +305,15 @@ export default function HandwritingPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => copyToClipboard(tool3Output)}
-                    className="w-full flex items-center gap-2 bg-white/80 hover:bg-white border-green-200 text-green-700 hover:text-green-800"
+                    className="w-full"
                   >
-                    <Copy className="h-4 w-4" />
-                    Copy Result
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
                   </Button>
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
-
-        {/* Enhanced Bottom Section */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-3 px-8 py-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-lg">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-gray-700">AI Processing Active</span>
-            </div>
-            <div className="w-px h-4 bg-gray-300"></div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm font-medium text-gray-700">Instant Results</span>
-            </div>
-            <div className="w-px h-4 bg-gray-300"></div>
-            <div className="flex items-center gap-2">
-              <Star className="h-4 w-4 text-purple-500" />
-              <span className="text-sm font-medium text-gray-700">Professional Quality</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Enhanced Features Grid */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          <div className="group text-center p-8 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur-lg opacity-25 group-hover:opacity-40 transition-opacity"></div>
-              <div className="relative w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto">
-                <ArrowRight className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Continue Writing</h3>
-            <p className="text-gray-600 leading-relaxed">AI analyzes your writing style and continues naturally, maintaining your unique voice and creative flow.</p>
-          </div>
-          
-          <div className="group text-center p-8 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full blur-lg opacity-25 group-hover:opacity-40 transition-opacity"></div>
-              <div className="relative w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Grammar Fixer</h3>
-            <p className="text-gray-600 leading-relaxed">Fix grammar, spelling, punctuation, and improve sentence structure while preserving your original meaning.</p>
-          </div>
-          
-          <div className="group text-center p-8 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-lg opacity-25 group-hover:opacity-40 transition-opacity"></div>
-              <div className="relative w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto">
-                <BookOpen className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Text Summarizer</h3>
-            <p className="text-gray-600 leading-relaxed">Create concise summaries or shorten text while preserving essential information and key insights.</p>
-          </div>
         </div>
       </div>
     </div>
