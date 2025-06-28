@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
@@ -479,6 +478,7 @@ export default function Home() {
             </div>
           </div>
         )}
+
       </TooltipProvider>
 
       {/* Main Content with enhanced blue glow */}
@@ -579,17 +579,17 @@ export default function Home() {
                       </div>
                     </div>
 
-                  <div className="agent-card transition-smooth cursor-pointer">
+                  <Link href="/handwriting" className="agent-card transition-smooth cursor-pointer hover:no-underline">
                     <div className="agent-icon bg-blue-100">
-                      <Sparkles size={16} className="text-blue-500" />
+                      <ExternalLink size={16} className="text-blue-500" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-sm">AI-Powered Analysis</h3>
+                      <h3 className="font-medium text-sm">Advanced Handwriting Tools</h3>
                       <p className="text-xs text-gray-500 mt-1">
-                        Advanced AI algorithms analyze and enhance your prompts for maximum effectiveness.
+                        Access dedicated interfaces for continue writing, grammar fixing, and text summarizing.
                       </p>
                     </div>
-                  </div>
+                  </Link>
                 </div>
               </div>
             </div>
