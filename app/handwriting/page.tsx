@@ -1,191 +1,281 @@
 "use client"
 
 import React, { useState } from "react"
-import { PenTool, ArrowRight, FileText, Scissors, BookOpen, Home, Sparkles } from "lucide-react"
+import { PenTool, ArrowRight, FileText, BookOpen, Home, Wand2, CheckCircle, Scissors } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
 import Link from "next/link"
-import { ContinueWriting } from "@/components/handwriting/continue-writing"
-import { GrammarFixer } from "@/components/handwriting/grammar-fixer"
-import { TextSummarizer } from "@/components/handwriting/text-summarizer"
+import { processHandwriting } from "@/lib/groq-service"
 
 export default function HandwritingPage() {
-  const [activeSubTool, setActiveSubTool] = useState<string | null>(null)
+  const [tool1Input, setTool1Input] = useState("")
+  const [tool1Output, setTool1Output] = useState("")
+  const [tool1Loading, setTool1Loading] = useState(false)
 
-  const subTools = [
-    {
-      id: "continue",
-      name: "Continue Writing",
-      icon: <ArrowRight className="h-6 w-6" />,
-      description: "AI analyzes your writing style and continues the text naturally, maintaining your unique voice and tone.",
-      color: "bg-blue-500",
-      hoverColor: "hover:bg-blue-600",
-      borderColor: "border-blue-200",
-      bgColor: "bg-blue-50",
-      component: <ContinueWriting />
-    },
-    {
-      id: "grammar",
-      name: "Grammar & Style Fixer",
-      icon: <FileText className="h-6 w-6" />,
-      description: "Fix grammar, spelling, punctuation, and improve sentence structure while preserving your original meaning.",
-      color: "bg-emerald-500",
-      hoverColor: "hover:bg-emerald-600",
-      borderColor: "border-emerald-200",
-      bgColor: "bg-emerald-50",
-      component: <GrammarFixer />
-    },
-    {
-      id: "summarize",
-      name: "Text Summarizer & Shortener",
-      icon: <BookOpen className="h-6 w-6" />,
-      description: "Create concise summaries or shorten text while preserving essential information and key insights.",
-      color: "bg-purple-500",
-      hoverColor: "hover:bg-purple-600",
-      borderColor: "border-purple-200",
-      bgColor: "bg-purple-50",
-      component: <TextSummarizer />
+  const [tool2Input, setTool2Input] = useState("")
+  const [tool2Output, setTool2Output] = useState("")
+  const [tool2Loading, setTool2Loading] = useState(false)
+
+  const [tool3Input, setTool3Input] = useState("")
+  const [tool3Output, setTool3Output] = useState("")
+  const [tool3Loading, setTool3Loading] = useState(false)
+
+  const handleTool1Process = async () => {
+    if (!tool1Input.trim()) return
+    setTool1Loading(true)
+    try {
+      const result = await processHandwriting(tool1Input, "continue")
+      if (result.processedText) {
+        setTool1Output(result.processedText)
+      }
+    } catch (error) {
+      console.error("Error:", error)
+    } finally {
+      setTool1Loading(false)
     }
-  ]
+  }
 
-  if (activeSubTool) {
-    const tool = subTools.find(t => t.id === activeSubTool)
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="container mx-auto px-4 py-8">
-          {/* Header with back button */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                onClick={() => setActiveSubTool(null)}
-                className="flex items-center gap-2"
-              >
-                <PenTool className="h-4 w-4" />
-                Back to Tools
-              </Button>
-              <div className="h-6 w-px bg-gray-300" />
-              <div className="flex items-center gap-2">
-                {tool?.icon}
-                <h1 className="text-2xl font-bold text-gray-900">{tool?.name}</h1>
-              </div>
-            </div>
-            <Link href="/">
-              <Button variant="ghost" className="flex items-center gap-2">
-                <Home className="h-4 w-4" />
-                Home
-              </Button>
-            </Link>
-          </div>
+  const handleTool2Process = async () => {
+    if (!tool2Input.trim()) return
+    setTool2Loading(true)
+    try {
+      const result = await processHandwriting(tool2Input, "grammar")
+      if (result.processedText) {
+        setTool2Output(result.processedText)
+      }
+    } catch (error) {
+      console.error("Error:", error)
+    } finally {
+      setTool2Loading(false)
+    }
+  }
 
-          {/* Tool component */}
-          <div className="max-w-6xl mx-auto">
-            {tool?.component}
-          </div>
-        </div>
-      </div>
-    )
+  const handleTool3Process = async () => {
+    if (!tool3Input.trim()) return
+    setTool3Loading(true)
+    try {
+      const result = await processHandwriting(tool3Input, "summarize")
+      if (result.processedText) {
+        setTool3Output(result.processedText)
+      }
+    } catch (error) {
+      console.error("Error:", error)
+    } finally {
+      setTool3Loading(false)
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-green-100 rounded-full">
-              <PenTool className="h-8 w-8 text-green-600" />
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <PenTool className="h-6 w-6 text-green-600" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900">Handwriting Assistant</h1>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Handwriting Assistant</h1>
+              <p className="text-gray-600">AI-powered writing tools for all your content needs</p>
+            </div>
           </div>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Professional AI-powered writing tools to enhance, fix, and optimize your content
-          </p>
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <Link href="/">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Home className="h-4 w-4" />
-                Back to Main App
-              </Button>
-            </Link>
-          </div>
+          <Link href="/">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              Back to Main App
+            </Button>
+          </Link>
         </div>
 
-        {/* Sub-tools grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {subTools.map((tool) => (
-            <Card 
-              key={tool.id} 
-              className={`cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 ${tool.borderColor} border-2`}
-              onClick={() => setActiveSubTool(tool.id)}
-            >
-              <CardHeader className={`${tool.bgColor} rounded-t-lg`}>
-                <div className="flex items-center justify-between">
-                  <div className={`p-3 ${tool.color} text-white rounded-lg`}>
-                    {tool.icon}
+        {/* Three-Panel Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Tool 1: Continue Writing */}
+          <Card className="border-blue-200 shadow-sm">
+            <CardHeader className="bg-blue-50 border-b border-blue-100 pb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <ArrowRight className="h-5 w-5 text-blue-600" />
+                <CardTitle className="text-lg text-blue-900">Continue Writing</CardTitle>
+              </div>
+              <CardDescription className="text-blue-700 text-sm">
+                AI continues your text naturally
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Your Text</Label>
+                <Textarea
+                  placeholder="Start writing something and AI will continue it..."
+                  className="min-h-[120px] resize-none border-blue-200 focus:border-blue-400 text-sm"
+                  value={tool1Input}
+                  onChange={(e) => setTool1Input(e.target.value)}
+                />
+                {tool1Input.trim() && (
+                  <div className="text-xs text-gray-500">
+                    {tool1Input.trim().split(/\s+/).length} words
                   </div>
-                  <Sparkles className="h-5 w-5 text-gray-400" />
-                </div>
-                <CardTitle className="text-xl font-bold text-gray-900 mt-4">
-                  {tool.name}
-                </CardTitle>
-                <CardDescription className="text-gray-600 text-base leading-relaxed">
-                  {tool.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span>AI-Powered Processing</span>
+                )}
+              </div>
+
+              <Button
+                onClick={handleTool1Process}
+                disabled={!tool1Input.trim() || tool1Loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-sm"
+                size="sm"
+              >
+                {tool1Loading ? "Continuing..." : "Continue Writing"}
+              </Button>
+
+              {tool1Output && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-green-700">AI Continuation</Label>
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                    <p className="text-sm text-green-900 whitespace-pre-wrap leading-relaxed">
+                      {tool1Output}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    <span>Real-time Results</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                    <span>Professional Quality</span>
-                  </div>
-                  
-                  <Button 
-                    className={`w-full mt-6 ${tool.color} ${tool.hoverColor} text-white`}
-                    onClick={() => setActiveSubTool(tool.id)}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(tool1Output)}
+                    className="w-full text-xs"
                   >
-                    Open {tool.name}
-                    <ArrowRight className="h-4 w-4 ml-2" />
+                    Copy Result
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tool 2: Grammar Fixer */}
+          <Card className="border-emerald-200 shadow-sm">
+            <CardHeader className="bg-emerald-50 border-b border-emerald-100 pb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="h-5 w-5 text-emerald-600" />
+                <CardTitle className="text-lg text-emerald-900">Grammar Fixer</CardTitle>
+              </div>
+              <CardDescription className="text-emerald-700 text-sm">
+                Fix grammar, spelling & style
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Text to Fix</Label>
+                <Textarea
+                  placeholder="Paste text with grammar issues here..."
+                  className="min-h-[120px] resize-none border-emerald-200 focus:border-emerald-400 text-sm"
+                  value={tool2Input}
+                  onChange={(e) => setTool2Input(e.target.value)}
+                />
+                {tool2Input.trim() && (
+                  <div className="text-xs text-gray-500">
+                    {tool2Input.trim().split(/\s+/).length} words
+                  </div>
+                )}
+              </div>
+
+              <Button
+                onClick={handleTool2Process}
+                disabled={!tool2Input.trim() || tool2Loading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-sm"
+                size="sm"
+              >
+                {tool2Loading ? "Fixing..." : "Fix Grammar"}
+              </Button>
+
+              {tool2Output && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-green-700">Fixed Text</Label>
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                    <p className="text-sm text-green-900 whitespace-pre-wrap leading-relaxed">
+                      {tool2Output}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(tool2Output)}
+                    className="w-full text-xs"
+                  >
+                    Copy Result
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tool 3: Text Summarizer */}
+          <Card className="border-purple-200 shadow-sm">
+            <CardHeader className="bg-purple-50 border-b border-purple-100 pb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Scissors className="h-5 w-5 text-purple-600" />
+                <CardTitle className="text-lg text-purple-900">Text Summarizer</CardTitle>
+              </div>
+              <CardDescription className="text-purple-700 text-sm">
+                Create concise summaries
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Long Text</Label>
+                <Textarea
+                  placeholder="Paste long text to summarize..."
+                  className="min-h-[120px] resize-none border-purple-200 focus:border-purple-400 text-sm"
+                  value={tool3Input}
+                  onChange={(e) => setTool3Input(e.target.value)}
+                />
+                {tool3Input.trim() && (
+                  <div className="text-xs text-gray-500">
+                    {tool3Input.trim().split(/\s+/).length} words
+                  </div>
+                )}
+              </div>
+
+              <Button
+                onClick={handleTool3Process}
+                disabled={!tool3Input.trim() || tool3Loading}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-sm"
+                size="sm"
+              >
+                {tool3Loading ? "Summarizing..." : "Summarize Text"}
+              </Button>
+
+              {tool3Output && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-green-700">Summary</Label>
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                    <p className="text-sm text-green-900 whitespace-pre-wrap leading-relaxed">
+                      {tool3Output}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(tool3Output)}
+                    className="w-full text-xs"
+                  >
+                    Copy Result
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Features section */}
-        <div className="mt-16 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">Why Choose Our Handwriting Assistant?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Powered Intelligence</h3>
-              <p className="text-gray-600">Advanced language models understand context and maintain your unique writing style.</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="h-8 w-8 text-green-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Professional Quality</h3>
-              <p className="text-gray-600">Get publication-ready content with grammar fixes and style improvements.</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="h-8 w-8 text-purple-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Versatile Tools</h3>
-              <p className="text-gray-600">From continuing stories to summarizing reports, we've got all your writing needs covered.</p>
-            </div>
+        {/* Bottom Info */}
+        <div className="mt-8 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <Wand2 className="h-4 w-4 text-blue-500" />
+            <span className="text-sm text-gray-600">
+              All tools powered by AI • Process text instantly • Copy results with one click
+            </span>
           </div>
         </div>
       </div>
