@@ -1,0 +1,758 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+.font-sans {
+  font-family: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.glow-effect {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced blue glow effect */
+.blue-glow-top {
+  position: relative;
+}
+
+.blue-glow-top::before {
+  content: "";
+  position: absolute;
+  top: -50px; /* Start above the viewport */
+  left: 0;
+  right: 0;
+  height: 350px; /* Increased height for more prominent glow */
+  background: radial-gradient(ellipse at top, rgba(59, 130, 246, 0.8), transparent 70%); /* Increased opacity from 0.25 to 0.8 */
+  pointer-events: none;
+  z-index: 1;
+  animation: pulse-glow 6s ease-in-out infinite;
+}
+
+/* Add a second glow layer for more intensity */
+.blue-glow-top::after {
+  content: "";
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  height: 250px;
+  background: radial-gradient(ellipse at top, rgba(37, 99, 235, 0.6), transparent 80%);
+  pointer-events: none;
+  z-index: 0;
+  animation: pulse-glow-alt 8s ease-in-out infinite;
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0% {
+    opacity: 0.7;
+    filter: blur(15px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 0.7;
+    filter: blur(15px);
+  }
+}
+
+/* Alternate pulse glow animation */
+@keyframes pulse-glow-alt {
+  0% {
+    opacity: 0.6;
+    filter: blur(20px);
+  }
+  50% {
+    opacity: 0.9;
+    filter: blur(15px);
+  }
+  100% {
+    opacity: 0.6;
+    filter: blur(20px);
+  }
+}
+
+/* Glowing button effect */
+.glow-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-button::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: rgba(59, 130, 246, 0.4); /* Increased opacity from 0.15 to 0.4 */
+  border-radius: 50%;
+  z-index: -1;
+  animation: pulse-button 2s ease-in-out infinite;
+}
+
+@keyframes pulse-button {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* Fixed sidebar styles with blue glow */
+.sidebar {
+  @apply w-16 flex flex-col items-center py-4 relative z-10;
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); /* Added blue glow to sidebar */
+  border-right: 1px solid rgba(59, 130, 246, 0.1); /* Changed to blue tinted border */
+  position: relative;
+}
+
+.sidebar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.15), transparent 50%); /* Increased opacity from 0.04 to 0.15 */
+  pointer-events: none;
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -1px;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.3), transparent 80%); /* Increased opacity from 0.03 to 0.3 */
+  pointer-events: none;
+}
+
+/* Update sidebar icon styles with blue glow */
+.sidebar-icon {
+  @apply w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100/10 transition-all duration-200 cursor-pointer;
+}
+
+.sidebar-icon:hover {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); /* Added blue glow on hover */
+  color: rgba(59, 130, 246, 0.9); /* Changed text color on hover */
+}
+
+.sidebar-icon.active {
+  @apply bg-blue-600 text-white; /* Changed from black to blue */
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); /* Increased glow from 0.2 to 0.5 */
+}
+
+/* Fix for tooltip positioning in the sidebar to prevent overlapping */
+.sidebar .tooltip-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Ensure tooltips don't overlap with elements below them */
+.sidebar-tooltip {
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  z-index: 50;
+  white-space: nowrap;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.15); /* Added blue glow on hover */
+}
+
+.agent-card {
+  @apply border border-gray-100 rounded-lg p-4 flex hover:shadow-md transition-all duration-200 card-hover bg-white;
+}
+
+.agent-card:hover {
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25); /* Increased shadow from 0.08 to 0.25 */
+  border-color: rgba(59, 130, 246, 0.2); /* Increased border opacity from 0.1 to 0.2 */
+}
+
+.agent-icon {
+  @apply w-8 h-8 rounded-md flex items-center justify-center mr-3;
+}
+
+.input-glow:focus {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); /* Increased glow from 0.15 to 0.3 and changed to blue */
+  border-color: rgba(59, 130, 246, 0.5); /* Increased border opacity from 0.3 to 0.5 */
+}
+
+/* Search input styles removed as we no longer need them */
+
+.chat-input {
+  @apply w-full pl-4 pr-24 py-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-300 input-glow; /* Changed ring color to blue */
+  background-color: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(59, 130, 246, 0.2); /* Changed to blue tinted border */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.chat-input:focus {
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.35); /* Increased glow from 0.2 to 0.35 */
+  border-color: rgba(59, 130, 246, 0.5); /* Increased border opacity from 0.3 to 0.5 */
+}
+
+/* Chat input buttons container */
+.chat-input-buttons {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+  gap: 8px;
+}
+
+/* Chat input button */
+.chat-input-button {
+  @apply rounded-full h-9 w-9 flex items-center justify-center hover:bg-gray-100/50 transition-smooth;
+}
+
+/* Footer agents dropdown */
+.footer-agents-dropdown {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  background-color: white;
+  border-radius: 0.375rem;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+  min-width: 280px;
+  z-index: 30;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+/* Modern scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3); /* Changed to blue */
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5); /* Changed to blue */
+}
+
+/* Fixed header and footer */
+/* Header removed */
+
+.footer {
+  @apply p-4 z-10 relative;
+  background-color: rgba(255, 255, 255, 0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-top: none;
+  box-shadow: none;
+}
+
+/* Info icon with enhanced blue glow */
+.info-icon {
+  @apply w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center mb-4;
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5); /* Increased glow from 0.2 to 0.5 */
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* Content area - adjusted for no header */
+.content-area {
+  @apply flex-1 overflow-auto p-6 pt-8 relative z-0;
+  background-color: transparent;
+}
+
+/* App container with enhanced blue gradients */
+.app-container {
+  @apply flex h-screen;
+  background-color: #f8f9fa;
+  background-image: radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.15) 0%, transparent 60%), /* Increased opacity from 0.04 to 0.15 */
+    radial-gradient(circle at 20% 90%, rgba(37, 99, 235, 0.12) 0%, transparent 55%); /* Increased opacity from 0.04 to 0.12 */
+}
+
+/* Chat message styles */
+.chat-container {
+  @apply flex flex-col gap-6 max-w-4xl mx-auto;
+}
+
+.message {
+  @apply flex gap-4 max-w-4xl;
+}
+
+.message-user {
+  @apply justify-end;
+}
+
+/* Add a blue glow to AI messages */
+.message-ai .message-content {
+  @apply bg-white text-gray-800;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0 15px rgba(59, 130, 246, 0.15); /* Increased glow from 0.05 to 0.15 */
+  border: 1px solid rgba(59, 130, 246, 0.1); /* Increased border opacity from 0.03 to 0.1 */
+}
+
+/* Add a more prominent blue glow to user messages */
+.message-user .message-content {
+  @apply bg-blue-600 text-white;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.35); /* Increased glow from 0.15 to 0.35 */
+}
+
+.message-content {
+  @apply px-4 py-3 rounded-lg max-w-[80%];
+}
+
+.message-avatar {
+  @apply w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0;
+}
+
+.message-ai .message-avatar {
+  @apply bg-indigo-100;
+  box-shadow: 0 0 15px rgba(79, 70, 229, 0.25); /* Changed to indigo glow */
+}
+
+.message-user .message-avatar {
+  @apply bg-blue-100;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25); /* Increased glow from 0.1 to 0.25 */
+}
+
+/* Empty chat state */
+.empty-chat {
+  @apply flex flex-col items-center justify-center text-center h-full;
+}
+
+/* Chat history list - Fixed by using direct CSS properties instead of @apply */
+.chat-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.chat-history-item {
+  @apply flex items-center gap-3 p-2 rounded-md hover:bg-gray-100/20 cursor-pointer transition-all;
+}
+
+.chat-history-item.active {
+  @apply bg-blue-50/30; /* Changed from gray to blue tint */
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25); /* Increased glow from 0.1 to 0.25 */
+  border: 1px solid rgba(59, 130, 246, 0.15); /* Added blue border */
+}
+
+/* Sidebar dropdown - Fixed by using direct CSS properties instead of @apply */
+.sidebar-dropdown {
+  position: absolute;
+  left: 100%;
+  margin-left: 0.5rem;
+  background-color: white;
+  border-radius: 0.375rem;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15); /* Added blue tint to shadow */
+  padding: 0.5rem;
+  min-width: 200px;
+  z-index: 20;
+  border: 1px solid rgba(59, 130, 246, 0.1); /* Changed to blue tinted border */
+}
+
+.sidebar-dropdown-item {
+  @apply flex items-center gap-2 p-2 rounded-md hover:bg-blue-50/50 cursor-pointer transition-all text-sm; /* Changed hover to blue tint */
+}
+
+/* AI Agent selector */
+.agent-selector {
+  @apply p-4 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-100/50;
+}
+
+.agent-option {
+  @apply flex items-center gap-3 p-3 rounded-md hover:bg-blue-50/40 cursor-pointer transition-all; /* Changed hover to blue tint */
+}
+
+.agent-option.active {
+  @apply bg-blue-50/60; /* Increased opacity from 0.5 to 0.6 */
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.25); /* Increased glow from 0.1 to 0.25 */
+  border: 1px solid rgba(59, 130, 246, 0.3); /* Increased border opacity from 0.2 to 0.3 */
+}
+
+/* Prompt history */
+.prompt-history {
+  @apply flex flex-col gap-2;
+}
+
+.prompt-item {
+  @apply p-3 border border-gray-100/50 rounded-md hover:border-blue-300/60 cursor-pointer transition-all; /* Increased border opacity */
+}
+
+.prompt-item:hover {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); /* Added blue glow on hover */
+}
+
+/* Add a subtle animation to the typing indicator */
+@keyframes typing-glow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.85);
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3); /* Added blue glow */
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); /* Added blue glow */
+  }
+}
+
+.animate-pulse {
+  animation: typing-glow 1.5s infinite;
+}
+
+.animate-pulse.delay-100 {
+  animation-delay: 0.2s;
+}
+
+.animate-pulse.delay-200 {
+  animation-delay: 0.4s;
+}
+
+/* Add blue glow to buttons on hover */
+button:hover {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+}
+
+/* Make sure whitespace is preserved in messages */
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+  display: block; /* Add display block to ensure proper rendering */
+}
+
+/* Prompt suggestion item styling */
+.prompt-suggestion {
+  @apply flex items-center justify-between gap-2 p-2 rounded-md my-2 animate-fadeIn;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Enhanced Score Display Widget */
+.score-display-container {
+  @apply my-4 p-4 rounded-lg bg-white/80 backdrop-blur-md border animate-fadeIn;
+  border-color: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+}
+
+.score-header {
+  @apply text-sm font-semibold text-gray-700 mb-3 pb-2 border-b;
+  border-color: rgba(59, 130, 246, 0.1);
+}
+
+.score-display {
+  @apply flex flex-col md:flex-row gap-6 items-center;
+}
+
+.score-circle-container {
+  @apply flex-shrink-0;
+}
+
+.score-circle {
+  @apply relative flex flex-col items-center justify-center rounded-full w-24 h-24 text-white font-bold;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+  background: conic-gradient(currentColor var(--progress), #e2e8f0 0);
+  --progress: 0%;
+  transition: all 0.5s ease-out;
+}
+
+.score-circle::before {
+  content: '';
+  @apply absolute rounded-full w-20 h-20;
+  background-color: white;
+}
+
+.score-circle .score-value {
+  @apply relative z-10 text-2xl;
+  color: currentColor;
+}
+
+.score-circle .score-max {
+  @apply relative z-10 text-xs opacity-80;
+  color: currentColor;
+}
+
+.score-circle.score-high {
+  color: #10b981;
+  --progress: 100%;
+}
+
+.score-circle.score-medium {
+  color: #f59e0b;
+  --progress: 75%;
+}
+
+.score-circle.score-low {
+  color: #ef4444;
+  --progress: 50%;
+}
+
+.score-bar-container {
+  @apply flex-1 flex flex-col gap-1;
+}
+
+.score-label {
+  @apply flex justify-between text-sm mb-1;
+}
+
+.score-bar-background {
+  @apply h-3 w-full bg-gray-100 rounded-full overflow-hidden;
+}
+
+.score-bar {
+  @apply h-full rounded-full transition-all duration-1000 ease-out;
+  animation: grow-bar 1s ease-out forwards;
+  transform-origin: left;
+}
+
+@keyframes grow-bar {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.score-bar.score-high {
+  @apply bg-emerald-500;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.score-bar.score-medium {
+  @apply bg-amber-500;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.score-bar.score-low {
+  @apply bg-red-500;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.score-markers {
+  @apply flex justify-between text-xs text-gray-500 mt-1 px-1;
+  position: relative;
+  height: 16px;
+}
+
+.score-marker {
+  @apply absolute transform -translate-x-1/2;
+  top: 0;
+}
+
+/* Analysis badges */
+.analysis-badge-container {
+  @apply flex items-center gap-2 my-2 animate-fadeIn;
+  transform: translateX(0);
+  transition: transform 0.2s ease-out;
+}
+
+.analysis-badge-container:hover {
+  transform: translateX(5px);
+}
+
+.analysis-badge-icon {
+  @apply w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0;
+}
+
+.analysis-badge-container.strength .analysis-badge-icon {
+  @apply bg-emerald-500;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.analysis-badge-container.weakness .analysis-badge-icon {
+  @apply bg-red-500;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.analysis-badge-container.suggestion .analysis-badge-icon {
+  @apply bg-blue-500;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.analysis-badge {
+  @apply inline-block px-3 py-1.5 rounded-full text-sm font-medium;
+}
+
+.strength-badge {
+  @apply bg-emerald-50 text-emerald-800 border border-emerald-200;
+}
+
+.weakness-badge {
+  @apply bg-red-50 text-red-800 border border-red-200;
+}
+
+.suggestion-badge {
+  @apply bg-blue-50 text-blue-800 border border-blue-200;
+}
+
+@keyframes animate-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: animate-fadeIn 0.5s ease-out forwards;
+}
+
+/* Analysis section headers */
+.analysis-section-header {
+  @apply flex items-center gap-3 mt-6 mb-3 pb-2 border-b animate-fadeIn;
+  border-color: rgba(59, 130, 246, 0.1);
+}
+
+.analysis-section-header h3 {
+  @apply font-semibold text-base;
+}
+
+.analysis-section-header .section-icon {
+  @apply w-5 h-5 rounded-md flex-shrink-0;
+}
+
+.analysis-section-header.strengths h3 {
+  @apply text-emerald-700;
+}
+
+.analysis-section-header.strengths .section-icon {
+  @apply bg-emerald-500;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.analysis-section-header.weaknesses h3 {
+  @apply text-red-700;
+}
+
+.analysis-section-header.weaknesses .section-icon {
+  @apply bg-red-500;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.analysis-section-header.suggestions h3 {
+  @apply text-blue-700;
+}
+
+.analysis-section-header.suggestions .section-icon {
+  @apply bg-blue-500;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
