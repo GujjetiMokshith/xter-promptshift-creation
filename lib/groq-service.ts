@@ -74,7 +74,7 @@ Return ONLY the enhanced prompt, no explanations or meta-commentary.`;
             content: `Transform this basic prompt into a highly effective, detailed instruction with ${toneStyle} tone: "${prompt}"`
           }
         ],
-        model: "llama-3.1-70b-versatile",
+        model: "llama-3.1-8b-instant",
         temperature: 0.7,
         max_tokens: 1500,
       });
@@ -125,7 +125,7 @@ Provide your analysis in this exact JSON format:
             content: `Analyze this prompt comprehensively: "${prompt}"`
           }
         ],
-        model: "llama-3.1-70b-versatile",
+        model: "llama-3.1-8b-instant",
         temperature: 0.3,
         max_tokens: 1000,
       });
