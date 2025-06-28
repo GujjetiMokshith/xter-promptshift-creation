@@ -4,9 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, Copy, Check, Loader2, Info, Scissors, BarChart3, Download, RefreshCw } from "lucide-react"
+import { BookOpen, Copy, Check, Loader2, Scissors, BarChart3, Download, RefreshCw } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Slider } from "@/components/ui/slider"
@@ -71,38 +70,26 @@ export function TextSummarizer() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Input Section */}
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Main Input Card */}
       <Card className="border-purple-200 shadow-lg">
-        <CardHeader className="bg-purple-50">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-purple-600" />
+        <CardHeader className="bg-purple-50 border-b border-purple-100">
+          <CardTitle className="text-xl flex items-center gap-2 text-purple-900">
+            <BookOpen className="h-5 w-5" />
             Text Summarizer & Shortener
           </CardTitle>
-          <CardDescription>
-            Create concise summaries or shorten text while preserving essential information and key insights
+          <CardDescription className="text-purple-700">
+            Create concise summaries or shorten text while preserving key information
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="p-6">
           <div className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="input-text">Text to Process</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-gray-400" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[300px]">
-                      <p>Paste long articles, reports, emails, or any text you want to summarize or shorten. Works best with content over 100 words.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+            {/* Text Input */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-gray-700">Text to Process</Label>
               <Textarea
-                id="input-text"
                 placeholder="Paste your long text here... For example: articles, research papers, reports, emails, or any content you want to summarize or shorten while keeping the key information."
-                className="min-h-[250px] resize-none border-purple-200 focus:border-purple-400"
+                className="min-h-[250px] resize-none border-purple-200 focus:border-purple-400 text-base"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
               />
@@ -118,8 +105,8 @@ export function TextSummarizer() {
             </div>
 
             {/* Processing Mode */}
-            <div className="space-y-4 pt-4 border-t border-gray-100">
-              <Label>Processing Mode</Label>
+            <div className="space-y-4">
+              <Label className="text-sm font-medium text-gray-700">Processing Mode</Label>
               <RadioGroup
                 value={mode}
                 onValueChange={(value) => setMode(value as "summarize" | "shorten")}
@@ -156,7 +143,7 @@ export function TextSummarizer() {
             {/* Compression Level */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <Label>Target Compression</Label>
+                <Label className="text-sm font-medium text-gray-700">Target Compression</Label>
                 <Badge variant="outline" className="text-xs">
                   {compressionLevel}% shorter
                 </Badge>
@@ -176,27 +163,33 @@ export function TextSummarizer() {
               </div>
             </div>
 
-            <div className="flex justify-between items-center pt-4">
-              <Button variant="outline" onClick={() => setInputText("")} disabled={!inputText.trim() || isLoading}>
-                <RefreshCw className="h-4 w-4 mr-2" />
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+              <Button 
+                variant="outline" 
+                onClick={() => setInputText("")} 
+                disabled={!inputText.trim() || isLoading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
                 Clear
               </Button>
               <Button
                 onClick={handleProcess}
                 disabled={!inputText.trim() || isLoading}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Processing...
                   </>
                 ) : (
                   <>
                     {mode === "summarize" ? (
-                      <BarChart3 className="mr-2 h-4 w-4" />
+                      <BarChart3 className="h-4 w-4" />
                     ) : (
-                      <Scissors className="mr-2 h-4 w-4" />
+                      <Scissors className="h-4 w-4" />
                     )}
                     {mode === "summarize" ? "Create Summary" : "Shorten Text"}
                   </>
@@ -207,17 +200,17 @@ export function TextSummarizer() {
         </CardContent>
       </Card>
 
-      {/* Results Section */}
+      {/* Results Card */}
       {processedText && (
         <Card className="border-green-200 shadow-lg">
-          <CardHeader className="bg-green-50">
+          <CardHeader className="bg-green-50 border-b border-green-100">
             <div className="flex justify-between items-start">
               <div>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-600" />
+                <CardTitle className="text-xl flex items-center gap-2 text-green-900">
+                  <Check className="h-5 w-5" />
                   {mode === "summarize" ? "Summary" : "Shortened Text"}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-green-700">
                   {mode === "summarize" 
                     ? "Key points and main ideas extracted" 
                     : "Text condensed while preserving essential information"
@@ -229,24 +222,24 @@ export function TextSummarizer() {
                   variant="outline"
                   size="sm"
                   onClick={() => copyToClipboard(processedText)}
+                  className="flex items-center gap-1"
                 >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
+                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  Copy
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={downloadText}
+                  className="flex items-center gap-1"
                 >
                   <Download className="h-4 w-4" />
+                  Download
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="p-6">
             <div className="space-y-6">
               {/* Statistics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-blue-50 rounded-lg">
@@ -321,19 +314,6 @@ export function TextSummarizer() {
           </CardContent>
         </Card>
       )}
-
-      {/* Tips Section */}
-      <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="pt-6">
-          <h3 className="font-semibold text-amber-800 mb-3">📝 Summarizing Tips</h3>
-          <ul className="space-y-2 text-sm text-amber-700">
-            <li>• <strong>Summarize:</strong> Best for extracting key insights from long articles or reports</li>
-            <li>• <strong>Shorten:</strong> Ideal for reducing email length or condensing content while keeping details</li>
-            <li>• Use higher compression for quick overviews, lower for detailed condensation</li>
-            <li>• Works great with academic papers, news articles, business reports, and research</li>
-          </ul>
-        </CardContent>
-      </Card>
     </div>
   )
 }
