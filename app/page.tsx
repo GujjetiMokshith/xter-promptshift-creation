@@ -20,6 +20,10 @@ import {
   Key,
   AlertCircle,
   PenTool,
+  ArrowRight,
+  FileText,
+  BookOpen,
+  Palette,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,6 +31,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import Link from "next/link"
 import { analyzePrompt, enhancePrompt, processHandwriting } from "@/lib/groq-service"
 import { useSearchParams, useRouter } from "next/navigation"
+import { ContinueWriting } from "@/components/handwriting/continue-writing"
+import { GrammarFixer } from "@/components/handwriting/grammar-fixer"
+import { TextSummarizer } from "@/components/handwriting/text-summarizer"
+import { DrawingCanvas } from "@/components/handwriting/drawing-canvas"
 
 interface Message {
   id: string
@@ -77,6 +85,10 @@ export default function Home() {
   // State for footer dropdowns
   const [showFooterAgents, setShowFooterAgents] = useState(false)
 
+  // State for handwriting tools
+  const [showHandwritingTools, setShowHandwritingTools] = useState(false)
+  const [activeHandwritingTool, setActiveHandwritingTool] = useState<string | null>(null)
+
   // State for AI agents
   const [currentAgent, setCurrentAgent] = useState<Agent>({
     id: "enhancer",
@@ -95,7 +107,7 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Sample AI agents (added handwriting assistant)
+  // Sample AI agents (updated handwriting assistant)
   const agents: Agent[] = [
     {
       id: "enhancer",
@@ -118,6 +130,42 @@ export default function Home() {
       description: "Continue writing, fix grammar, shorten text, or create summaries.",
       color: "bg-green-500",
     },
+  ]
+
+  // Handwriting tools
+  const handwritingTools = [
+    {
+      id: "continue",
+      name: "Continue Writing",
+      icon: <ArrowRight className="h-5 w-5" />,
+      description: "AI continues your text naturally",
+      color: "bg-blue-500",
+      component: <ContinueWriting />
+    },
+    {
+      id: "grammar",
+      name: "Grammar & Style Fixer",
+      icon: <FileText className="h-5 w-5" />,
+      description: "Fix grammar and improve style",
+      color: "bg-emerald-500",
+      component: <GrammarFixer />
+    },
+    {
+      id: "summarize",
+      name: "Text Summarizer",
+      icon: <BookOpen className="h-5 w-5" />,
+      description: "Create summaries and shorten text",
+      color: "bg-purple-500",
+      component: <TextSummarizer />
+    },
+    {
+      id: "canvas",
+      name: "Digital Canvas",
+      icon: <Palette className="h-5 w-5" />,
+      description: "Professional drawing and handwriting",
+      color: "bg-orange-500",
+      component: <DrawingCanvas />
+    }
   ]
 
   // Auto-scroll to bottom when messages change
@@ -179,6 +227,9 @@ export default function Home() {
       if (!target.closest(".footer-agents-dropdown") && !target.closest(".footer-agents-button")) {
         setShowFooterAgents(false)
       }
+      if (!target.closest(".handwriting-tools-dropdown") && !target.closest(".handwriting-tools-button")) {
+        setShowHandwritingTools(false)
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside)
@@ -194,6 +245,9 @@ export default function Home() {
       const selectedAgent = agents.find(agent => agent.id === agentParam)
       if (selectedAgent) {
         setCurrentAgent(selectedAgent)
+        if (selectedAgent.id === "handwriting") {
+          setShowHandwritingTools(true)
+        }
       }
     }
   }, [searchParams])
@@ -340,14 +394,16 @@ export default function Home() {
 
   const selectAgent = (agent: Agent) => {
     if (agent) {
-      // If handwriting assistant is selected, redirect to advanced tools
-      if (agent.id === "handwriting") {
-        router.push("/handwriting")
-        return
-      }
-
       setCurrentAgent(agent)
       setShowFooterAgents(false)
+      
+      // If handwriting assistant is selected, show tools
+      if (agent.id === "handwriting") {
+        setShowHandwritingTools(true)
+      } else {
+        setShowHandwritingTools(false)
+        setActiveHandwritingTool(null)
+      }
       
       // Reset messages to show empty chat with the new agent
       setMessages([])
@@ -372,6 +428,12 @@ export default function Home() {
     }
   }
 
+  const selectHandwritingTool = (toolId: string) => {
+    setActiveHandwritingTool(toolId)
+    setShowHandwritingTools(false)
+    setMessages([]) // Clear messages when switching tools
+  }
+
   const handlePromptClick = (prompt: string) => {
     setInputValue(prompt)
     inputRef.current?.focus()
@@ -379,10 +441,115 @@ export default function Home() {
 
   const toggleFooterAgents = () => {
     setShowFooterAgents(!showFooterAgents)
+    setShowHandwritingTools(false)
   }
 
-  const handleHandwritingCardClick = () => {
-    router.push("/handwriting")
+  const toggleHandwritingTools = () => {
+    setShowHandwritingTools(!showHandwritingTools)
+    setShowFooterAgents(false)
+  }
+
+  // If a handwriting tool is active, show its component
+  if (activeHandwritingTool) {
+    const tool = handwritingTools.find(t => t.id === activeHandwritingTool)
+    
+    if (tool?.id === 'canvas') {
+      return (
+        <div className="h-screen">
+          {/* Canvas Header */}
+          <div className="bg-white border-b border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveHandwritingTool(null)}
+                  className="flex items-center gap-2"
+                >
+                  <PenTool className="h-4 w-4" />
+                  Back to Chat
+                </Button>
+                <div className="h-6 w-px bg-gray-300" />
+                <div className="flex items-center gap-2">
+                  <Palette className="h-5 w-5 text-orange-600" />
+                  <h1 className="text-xl font-bold text-gray-900">Digital Handwriting Canvas</h1>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleHandwritingTools}
+                className="handwriting-tools-button flex items-center gap-2"
+              >
+                <PenTool className="h-4 w-4" />
+                Tools
+              </Button>
+            </div>
+          </div>
+          
+          {/* Canvas Component */}
+          <div className="h-[calc(100vh-60px)]">
+            {tool.component}
+          </div>
+        </div>
+      )
+    }
+    
+    return (
+      <div className="app-container">
+        {/* Transparent sidebar with tooltips */}
+        <TooltipProvider delayDuration={300}>
+          <div className="sidebar">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
+                  onClick={() => setActiveHandwritingTool(null)}
+                >
+                  <ArrowRight className="h-5 w-5 rotate-180" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Back to Chat</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex flex-col items-center gap-8 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className="sidebar-icon transition-smooth active"
+                  >
+                    <PenTool className="h-5 w-5" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>{tool?.name}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col blue-glow-top">
+          <div className="content-area">
+            <div className="max-w-6xl mx-auto h-full">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  {tool?.icon}
+                  <h1 className="text-2xl font-bold text-gray-900">{tool?.name}</h1>
+                </div>
+                <p className="text-gray-600">{tool?.description}</p>
+              </div>
+              {tool?.component}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -455,7 +622,6 @@ export default function Home() {
                   <Settings size={16} />
                   <span>Settings</span>
                 </div>
-                {/* Sign Out option removed since authentication is disabled */}
               </div>
             )}
           </div>
@@ -576,7 +742,7 @@ export default function Home() {
 
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
-                    onClick={handleHandwritingCardClick}
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "handwriting"))}
                   >
                       <div className="agent-icon bg-green-100">
                         <PenTool size={16} className="text-green-500" />
@@ -860,6 +1026,47 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+
+                {/* Handwriting Tools Dropdown */}
+                {currentAgent.id === "handwriting" && (
+                  <div className="relative">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs flex items-center gap-1 hover:bg-green-50/50 transition-smooth border handwriting-tools-button bg-green-50 text-green-700 border-green-200"
+                      onClick={toggleHandwritingTools}
+                    >
+                      <PenTool className="h-3 w-3" />
+                      Tools
+                      <ChevronDown className="h-3 w-3 ml-1 text-gray-400" />
+                    </Button>
+
+                    {showHandwritingTools && (
+                      <div className="footer-agents-dropdown handwriting-tools-dropdown">
+                        <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
+                          <h3 className="font-medium text-sm">Handwriting Tools</h3>
+                        </div>
+                        <div className="p-2">
+                          {handwritingTools.map((tool) => (
+                            <div
+                              key={tool.id}
+                              className="agent-option"
+                              onClick={() => selectHandwritingTool(tool.id)}
+                            >
+                              <div className={`w-6 h-6 ${tool.color} rounded-md flex items-center justify-center text-white`}>
+                                {tool.icon}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium">{tool.name}</div>
+                                <div className="text-xs text-gray-500">{tool.description}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
