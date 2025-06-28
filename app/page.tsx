@@ -57,7 +57,8 @@ interface PromptHistory {
 }
 
 export default function Home() {
-  const searchParams = useSearchParams()
+  // Only call useSearchParams on the client side
+  const searchParams = typeof window !== 'undefined' ? useSearchParams() : null
   const router = useRouter()
 
   // State for messages in current chat
@@ -191,7 +192,7 @@ export default function Home() {
 
   // Check URL parameters to select the correct agent
   useEffect(() => {
-    if (!isHydrated) return
+    if (!isHydrated || !searchParams) return
 
     const agentParam = searchParams.get("agent")
     if (agentParam) {
