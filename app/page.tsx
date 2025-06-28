@@ -340,8 +340,14 @@ export default function Home() {
 
   const selectAgent = (agent: Agent) => {
     if (agent) {
-    setCurrentAgent(agent)
-    setShowFooterAgents(false)
+      // If handwriting assistant is selected, redirect to advanced tools
+      if (agent.id === "handwriting") {
+        router.push("/handwriting")
+        return
+      }
+
+      setCurrentAgent(agent)
+      setShowFooterAgents(false)
       
       // Reset messages to show empty chat with the new agent
       setMessages([])
@@ -373,6 +379,10 @@ export default function Home() {
 
   const toggleFooterAgents = () => {
     setShowFooterAgents(!showFooterAgents)
+  }
+
+  const handleHandwritingCardClick = () => {
+    router.push("/handwriting")
   }
 
   return (
@@ -566,7 +576,7 @@ export default function Home() {
 
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
-                    onClick={() => selectAgent(agents.find(agent => agent.id === "handwriting"))}
+                    onClick={handleHandwritingCardClick}
                   >
                       <div className="agent-icon bg-green-100">
                         <PenTool size={16} className="text-green-500" />
