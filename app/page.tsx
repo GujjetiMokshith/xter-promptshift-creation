@@ -18,6 +18,8 @@ import {
   Wand2,
   LineChart,
   ExternalLink,
+  Key,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -87,6 +89,9 @@ export default function Home() {
   // State for prompt history
   const [promptHistory, setPromptHistory] = useState<PromptHistory[]>([])
 
+  // State for API key status
+  const [hasApiKey, setHasApiKey] = useState(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -118,6 +123,12 @@ export default function Home() {
     inputRef.current?.focus()
   }, [])
 
+  // Check for API key
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY
+    setHasApiKey(!!apiKey && apiKey !== 'your_groq_api_key_here')
+  }, [])
+
   // Load chats from localStorage on initial load
   useEffect(() => {
     const savedChats = localStorage.getItem("typingmind-chats")
@@ -138,8 +149,6 @@ export default function Home() {
         console.error("Error parsing saved chats:", error)
       }
     }
-
-
   }, [])
 
   // Save chats to localStorage whenever they change
@@ -148,8 +157,6 @@ export default function Home() {
       localStorage.setItem("typingmind-chats", JSON.stringify(chats))
     }
   }, [chats])
-
-
 
   // Update current chat in chats array whenever messages change
   useEffect(() => {
@@ -454,8 +461,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
-
       </TooltipProvider>
 
       {/* Main Content with enhanced blue glow */}
@@ -485,11 +490,27 @@ export default function Home() {
                 </div>
                 <h1 className="text-2xl font-medium mb-1">Hey, I'm TypingMind.</h1>
                 <p className="text-gray-500">How can I help you with your prompts today?</p>
+                
+                {/* API Key Status */}
+                {!hasApiKey && (
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-sm">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <span className="text-amber-800">
+                      Using demo mode. Add your Groq API key to <code className="bg-amber-100 px-1 rounded">.env.local</code> for enhanced AI responses.
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-medium">Your Prompt Tools</h2>
+                  {hasApiKey && (
+                    <div className="flex items-center gap-1 text-xs text-green-600">
+                      <Key className="h-3 w-3" />
+                      <span>Groq API Connected</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -584,12 +605,12 @@ export default function Home() {
                               <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 my-3">
                                 <div className="flex justify-between items-start">
                                   <div className="flex-1">
-                                    <p className="text-sm text-indigo-900">{promptText}</p>
+                                    <p className="text-sm text-indigo-900 leading-relaxed">{promptText}</p>
                                   </div>
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    className="ml-2 flex-shrink-0"
+                                    className="ml-2 flex-shrink-0 hover:bg-indigo-100"
                                     onClick={() => {
                                       navigator.clipboard.writeText(promptText);
                                     }}
