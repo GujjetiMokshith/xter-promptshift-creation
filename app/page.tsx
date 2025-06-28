@@ -88,6 +88,9 @@ export default function Home() {
   // State for prompt history
   const [promptHistory, setPromptHistory] = useState<PromptHistory[]>([])
 
+  // State for hydration
+  const [isHydrated, setIsHydrated] = useState(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -116,6 +119,11 @@ export default function Home() {
     },
   ]
 
+  // Handle hydration
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -123,11 +131,15 @@ export default function Home() {
 
   // Focus input on load
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+    if (isHydrated) {
+      inputRef.current?.focus()
+    }
+  }, [isHydrated])
 
   // Load chats from localStorage on initial load
   useEffect(() => {
+    if (!isHydrated) return
+
     const savedChats = localStorage.getItem("typingmind-chats")
     if (savedChats) {
       try {
@@ -146,18 +158,14 @@ export default function Home() {
         console.error("Error parsing saved chats:", error)
       }
     }
-
-
-  }, [])
+  }, [isHydrated])
 
   // Save chats to localStorage whenever they change
   useEffect(() => {
-    if (chats.length > 0) {
+    if (isHydrated && chats.length > 0) {
       localStorage.setItem("typingmind-chats", JSON.stringify(chats))
     }
-  }, [chats])
-
-
+  }, [chats, isHydrated])
 
   // Update current chat in chats array whenever messages change
   useEffect(() => {
@@ -183,6 +191,8 @@ export default function Home() {
 
   // Check URL parameters to select the correct agent
   useEffect(() => {
+    if (!isHydrated) return
+
     const agentParam = searchParams.get("agent")
     if (agentParam) {
       const selectedAgent = agents.find(agent => agent.id === agentParam)
@@ -190,7 +200,7 @@ export default function Home() {
         setCurrentAgent(selectedAgent)
       }
     }
-  }, [searchParams])
+  }, [searchParams, isHydrated])
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return
@@ -318,7 +328,9 @@ export default function Home() {
     setShowChatHistory(false)
 
     // Focus the input
-    inputRef.current?.focus()
+    if (isHydrated) {
+      inputRef.current?.focus()
+    }
   }
 
   const selectChat = (chatId: string) => {
@@ -352,19 +364,28 @@ export default function Home() {
       setCurrentChatId(newChatId)
       
       // Focus the input field
-      setTimeout(() => {
-        inputRef.current?.focus()
-      }, 100)
+      if (isHydrated) {
+        setTimeout(() => {
+          inputRef.current?.focus()
+        }, 100)
+      }
     }
   }
 
   const handlePromptClick = (prompt: string) => {
     setInputValue(prompt)
-    inputRef.current?.focus()
+    if (isHydrated) {
+      inputRef.current?.focus()
+    }
   }
 
   const toggleFooterAgents = () => {
     setShowFooterAgents(!showFooterAgents)
+  }
+
+  // Don't render until hydrated to prevent mismatch
+  if (!isHydrated) {
+    return null
   }
 
   return (

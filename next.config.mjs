@@ -11,6 +11,9 @@ const nextConfig = {
   },
   reactStrictMode: false,
   poweredByHeader: false,
+  experimental: {
+    suppressHydrationWarning: true,
+  },
 }
 
 export default nextConfig
