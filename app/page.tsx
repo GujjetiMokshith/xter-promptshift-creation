@@ -449,6 +449,11 @@ export default function Home() {
     setShowFooterAgents(false)
   }
 
+  const backToChat = () => {
+    setActiveHandwritingTool(null)
+    setMessages([])
+  }
+
   // If a handwriting tool is active, show its component
   if (activeHandwritingTool) {
     const tool = handwritingTools.find(t => t.id === activeHandwritingTool)
@@ -463,10 +468,10 @@ export default function Home() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setActiveHandwritingTool(null)}
+                  onClick={backToChat}
                   className="flex items-center gap-2"
                 >
-                  <PenTool className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 rotate-180" />
                   Back to Chat
                 </Button>
                 <div className="h-6 w-px bg-gray-300" />
@@ -491,6 +496,32 @@ export default function Home() {
           <div className="h-[calc(100vh-60px)]">
             {tool.component}
           </div>
+
+          {/* Handwriting Tools Dropdown for Canvas */}
+          {showHandwritingTools && (
+            <div className="absolute top-16 right-4 footer-agents-dropdown handwriting-tools-dropdown">
+              <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
+                <h3 className="font-medium text-sm">Switch Tool</h3>
+              </div>
+              <div className="p-2">
+                {handwritingTools.map((toolOption) => (
+                  <div
+                    key={toolOption.id}
+                    className={`agent-option ${toolOption.id === activeHandwritingTool ? 'active' : ''}`}
+                    onClick={() => selectHandwritingTool(toolOption.id)}
+                  >
+                    <div className={`w-6 h-6 ${toolOption.color} rounded-md flex items-center justify-center text-white`}>
+                      {toolOption.icon}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">{toolOption.name}</div>
+                      <div className="text-xs text-gray-500">{toolOption.description}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )
     }
@@ -506,7 +537,7 @@ export default function Home() {
                   variant="ghost"
                   size="icon"
                   className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
-                  onClick={() => setActiveHandwritingTool(null)}
+                  onClick={backToChat}
                 >
                   <ArrowRight className="h-5 w-5 rotate-180" />
                 </Button>
