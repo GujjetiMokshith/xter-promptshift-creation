@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, Upload, Copy, Check, Loader2, Search, BookOpen, Hash, Download, RefreshCw, X } from "lucide-react"
+import { FileText, Upload, Copy, Check, Loader2, Search, BookOpen, Hash, Download, RefreshCw, X, AlertCircle, Home, ArrowLeft } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -18,7 +18,11 @@ interface DocumentAnalysis {
   question?: string
 }
 
-export function DocumentAnalyzer() {
+interface DocumentAnalyzerProps {
+  onBackToMain?: () => void
+}
+
+export function DocumentAnalyzer({ onBackToMain }: DocumentAnalyzerProps) {
   const [documentText, setDocumentText] = useState("")
   const [analysisType, setAnalysisType] = useState<"summarize" | "extract-keywords" | "q-and-a">("summarize")
   const [question, setQuestion] = useState("")
@@ -27,21 +31,46 @@ export function DocumentAnalyzer() {
   const [copied, setCopied] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [activeTab, setActiveTab] = useState("upload")
+  const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = async (file: File) => {
     if (!file) return
 
+    setError(null)
     setUploadedFile(file)
     setIsLoading(true)
 
     try {
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("File size exceeds 10MB limit")
+      }
+
+      // Validate file type
+      const allowedTypes = [
+        'text/plain',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ]
+      
+      if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.txt')) {
+        throw new Error("Unsupported file format. Please use PDF, TXT, DOC, or DOCX files.")
+      }
+
       const text = await extractTextFromFile(file)
+      
+      if (!text || text.trim().length === 0) {
+        throw new Error("No text content found in the file. Please check if the file contains readable text.")
+      }
+
       setDocumentText(text)
       setActiveTab("analyze")
     } catch (error) {
       console.error("Error reading file:", error)
-      alert("Error reading file. Please try again or paste text manually.")
+      setError(error instanceof Error ? error.message : "Error reading file. Please try again.")
+      setUploadedFile(null)
     } finally {
       setIsLoading(false)
     }
@@ -54,27 +83,49 @@ export function DocumentAnalyzer() {
       reader.onload = async (e) => {
         try {
           const result = e.target?.result
-          if (typeof result === 'string') {
-            resolve(result)
-          } else if (result instanceof ArrayBuffer) {
-            // For PDF files, we'll need to handle them differently
-            // For now, we'll convert to text (this is a simplified approach)
-            const text = new TextDecoder().decode(result)
-            resolve(text)
+          
+          if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+            // Handle .txt files with proper encoding detection
+            if (typeof result === 'string') {
+              resolve(result)
+            } else if (result instanceof ArrayBuffer) {
+              // Try UTF-8 first, then fallback to other encodings
+              try {
+                const utf8Text = new TextDecoder('utf-8', { fatal: true }).decode(result)
+                resolve(utf8Text)
+              } catch {
+                try {
+                  const latin1Text = new TextDecoder('latin1').decode(result)
+                  resolve(latin1Text)
+                } catch {
+                  const asciiText = new TextDecoder('ascii').decode(result)
+                  resolve(asciiText)
+                }
+              }
+            }
+          } else if (file.type === 'application/pdf') {
+            // For PDF files, show a helpful message since we can't parse them without a library
+            reject(new Error("PDF parsing requires additional setup. Please copy and paste the text content manually for now."))
           } else {
-            reject(new Error("Unable to read file"))
+            // For other document types
+            if (typeof result === 'string') {
+              resolve(result)
+            } else {
+              reject(new Error("Unable to extract text from this file format"))
+            }
           }
         } catch (error) {
-          reject(error)
+          reject(new Error("Failed to read file content. The file may be corrupted or in an unsupported encoding."))
         }
       }
       
-      reader.onerror = () => reject(new Error("File reading failed"))
+      reader.onerror = () => reject(new Error("File reading failed. Please try again."))
       
-      if (file.type === "application/pdf") {
-        reader.readAsArrayBuffer(file)
+      // Read as text for .txt files, as array buffer for others
+      if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+        reader.readAsArrayBuffer(file) // Read as buffer to handle encoding properly
       } else {
-        reader.readAsText(file)
+        reader.readAsText(file, 'utf-8')
       }
     })
   }
@@ -82,7 +133,9 @@ export function DocumentAnalyzer() {
   const handleAnalyze = async () => {
     if (!documentText.trim()) return
 
+    setError(null)
     setIsLoading(true)
+    
     try {
       const result = await analyzeDocument(documentText, analysisType, question)
       if (result.processedText) {
@@ -92,18 +145,32 @@ export function DocumentAnalyzer() {
           question: analysisType === "q-and-a" ? question : undefined
         })
         setActiveTab("results")
+      } else {
+        throw new Error("No analysis result received")
       }
     } catch (error) {
       console.error("Error analyzing document:", error)
+      setError("Failed to analyze document. Please try again or check your internet connection.")
     } finally {
       setIsLoading(false)
     }
   }
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
   }
 
   const downloadAnalysis = () => {
@@ -114,7 +181,7 @@ export function DocumentAnalyzer() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `document-analysis-${analysis.type}.txt`
+    a.download = `document-analysis-${analysis.type}-${new Date().toISOString().split('T')[0]}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -126,6 +193,7 @@ export function DocumentAnalyzer() {
     setUploadedFile(null)
     setAnalysis(null)
     setQuestion("")
+    setError(null)
     setActiveTab("upload")
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
@@ -156,6 +224,46 @@ export function DocumentAnalyzer() {
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto">
+      {/* Header with Back Button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {onBackToMain && (
+            <Button
+              variant="outline"
+              onClick={onBackToMain}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Main
+            </Button>
+          )}
+          <div className="h-6 w-px bg-gray-300" />
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-orange-600" />
+            <h1 className="text-2xl font-bold text-gray-900">Document Analyzer</h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-medium text-red-800">Error</h3>
+            <p className="text-sm text-red-700 mt-1">{error}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setError(null)}
+            className="ml-auto"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       <Card className="border border-orange-100 shadow-md">
         <CardHeader className="bg-orange-50/50">
           <CardTitle className="text-xl flex items-center gap-2">
@@ -199,7 +307,7 @@ export function DocumentAnalyzer() {
                       Drop your document here or click to browse
                     </p>
                     <p className="text-sm text-gray-500 mb-4">
-                      Supports PDF, TXT, DOC, DOCX files up to 10MB
+                      Supports TXT files (PDF support coming soon) up to 10MB
                     </p>
                     <Button variant="outline" className="border-orange-200 text-orange-600 hover:bg-orange-50">
                       <Upload className="h-4 w-4 mr-2" />
@@ -210,7 +318,7 @@ export function DocumentAnalyzer() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.txt,.doc,.docx"
+                    accept=".txt,.pdf,.doc,.docx"
                     onChange={(e) => {
                       const file = e.target.files?.[0]
                       if (file) handleFileUpload(file)
@@ -241,6 +349,9 @@ export function DocumentAnalyzer() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Label className="text-sm font-medium text-gray-700">Or Paste Text Directly</Label>
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                      Recommended for best results
+                    </Badge>
                   </div>
                   <Textarea
                     placeholder="Paste your document text here for analysis..."
