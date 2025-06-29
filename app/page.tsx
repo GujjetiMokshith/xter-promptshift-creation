@@ -28,11 +28,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
-import { analyzePrompt, enhancePrompt, processHandwriting } from "@/lib/groq-service"
+import { analyzePrompt, enhancePrompt, processHandwriting, analyzeDocument } from "@/lib/groq-service"
+import { useSearchParams, useRouter } from "next/navigation"
 import { ContinueWriting } from "@/components/handwriting/continue-writing"
 import { GrammarFixer } from "@/components/handwriting/grammar-fixer"
 import { TextSummarizer } from "@/components/handwriting/text-summarizer"
 import { DrawingCanvas } from "@/components/handwriting/drawing-canvas"
+import { DocumentAnalyzer } from "@/components/document-analyzer"
 
 interface Message {
   id: string
@@ -64,6 +66,9 @@ interface PromptHistory {
 }
 
 export default function Home() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
   // State for messages in current chat
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
@@ -83,6 +88,9 @@ export default function Home() {
   // State for handwriting tools
   const [showHandwritingTools, setShowHandwritingTools] = useState(false)
   const [activeHandwritingTool, setActiveHandwritingTool] = useState<string | null>(null)
+
+  // State for document analyzer
+  const [showDocumentAnalyzer, setShowDocumentAnalyzer] = useState(false)
 
   // State for AI agents
   const [currentAgent, setCurrentAgent] = useState<Agent>({
@@ -124,6 +132,13 @@ export default function Home() {
       icon: <PenTool size={14} className="text-white" />,
       description: "Continue writing, fix grammar, shorten text, or create summaries.",
       color: "bg-green-500",
+    },
+    {
+      id: "document-analyzer",
+      name: "Document Analyzer",
+      icon: <FileText size={14} className="text-white" />,
+      description: "Upload and analyze documents with AI-powered insights and summaries.",
+      color: "bg-orange-500",
     },
   ], [])
 
@@ -252,6 +267,20 @@ export default function Home() {
     }
   }, [])
 
+  // Check URL parameters to select the correct agent
+  useEffect(() => {
+    const agentParam = searchParams.get("agent")
+    if (agentParam) {
+      const selectedAgent = agents.find(agent => agent.id === agentParam)
+      if (selectedAgent) {
+        setCurrentAgent(selectedAgent)
+        if (selectedAgent.id === "handwriting") {
+          setShowHandwritingTools(true)
+        }
+      }
+    }
+  }, [searchParams, agents])
+
   // Optimized message sending with better error handling
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim()) return
@@ -307,6 +336,12 @@ export default function Home() {
             return { text: "I encountered an error while processing your text.", processedText: "" };
           });
           break;
+        case "document-analyzer":
+          response = await analyzeDocument(currentInput, "summarize").catch(error => {
+            console.error("Error analyzing document:", error);
+            return { text: "I encountered an error while analyzing your document.", processedText: "" };
+          });
+          break;
         default:
           response = { text: "I'm not sure how to process that request." };
       }
@@ -321,6 +356,8 @@ export default function Home() {
         responseText = `Prompt Analysis Score: ${score}/100\n\n## Strengths\n${strengths.map((s) => `- ${s}`).join("\n")}\n\n## Areas for improvement\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\n## Suggestions\n${suggestions.map((s) => `- ${s}`).join("\n")}`
       } else if (currentAgent.id === "handwriting" && response.processedText) {
         responseText = `Here's the continued text:\n\n${response.processedText}`
+      } else if (currentAgent.id === "document-analyzer" && response.processedText) {
+        responseText = `Here's the document analysis:\n\n${response.processedText}`
       } else {
         responseText = response.text || "I processed your request but couldn't generate a proper response."
       }
@@ -398,10 +435,14 @@ export default function Home() {
       // Reset special states
       setShowHandwritingTools(false)
       setActiveHandwritingTool(null)
+      setShowDocumentAnalyzer(false)
       
       // If handwriting assistant is selected, show tools
       if (agent.id === "handwriting") {
         setShowHandwritingTools(true)
+      } else if (agent.id === "document-analyzer") {
+        setShowDocumentAnalyzer(true)
+        return // Don't create new chat for document analyzer
       }
       
       // Reset messages to show empty chat with the new agent
@@ -450,8 +491,55 @@ export default function Home() {
 
   const backToChat = useCallback(() => {
     setActiveHandwritingTool(null)
+    setShowDocumentAnalyzer(false)
     setMessages([])
   }, [])
+
+  // If document analyzer is active, show its component
+  if (showDocumentAnalyzer) {
+    return (
+      <div className="app-container">
+        <TooltipProvider delayDuration={300}>
+          <div className="sidebar">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
+                  onClick={backToChat}
+                >
+                  <ArrowRight className="h-5 w-5 rotate-180" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Back to Chat</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex flex-col items-center gap-8 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="sidebar-icon transition-smooth active">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Document Analyzer</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+
+        <div className="flex-1 flex flex-col blue-glow-top">
+          <div className="content-area">
+            <DocumentAnalyzer onBackToMain={backToChat} />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // If a handwriting tool is active, show its component
   if (activeHandwritingTool) {
@@ -536,7 +624,7 @@ export default function Home() {
                 >
                   <ArrowRight className="h-5 w-5 rotate-180" />
                 </Button>
-              </TooltipTrigger>
+              </ToTooltipTrigger>
               <TooltipContent side="right">
                 <p>Back to Chat</p>
               </TooltipContent>
@@ -679,6 +767,7 @@ export default function Home() {
 
       </TooltipProvider>
 
+      {/* Main Content with enhanced blue glow */}
       <div className="flex-1 flex flex-col blue-glow-top">
         <div className="content-area">
           {messages.length === 0 ? (
@@ -706,6 +795,7 @@ export default function Home() {
                 <h1 className="text-2xl font-medium mb-1">Hey, I'm TypingMind.</h1>
                 <p className="text-gray-500">How can I help you with your prompts today?</p>
                 
+                {/* API Key Status */}
                 {!hasApiKey && (
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-sm">
                     <AlertCircle className="h-4 w-4 text-amber-600" />
@@ -775,17 +865,20 @@ export default function Home() {
                       </div>
                     </div>
 
-                  <Link href="/handwriting" className="agent-card transition-smooth cursor-pointer hover:no-underline">
-                    <div className="agent-icon bg-blue-100">
-                      <ExternalLink size={16} className="text-blue-500" />
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "document-analyzer")!)}
+                  >
+                      <div className="agent-icon bg-orange-100">
+                        <FileText size={16} className="text-orange-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Document Analyzer</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Upload and analyze documents with AI-powered insights, summaries, and keyword extraction.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-sm">Advanced Handwriting Tools</h3>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Access dedicated interfaces for continue writing, grammar fixing, and text summarizing.
-                      </p>
-                    </div>
-                  </Link>
                 </div>
               </div>
             </div>
@@ -803,7 +896,8 @@ export default function Home() {
                       <span className={`text-xs font-bold ${
                         currentAgent.id === "enhancer" ? "text-indigo-500" : 
                         currentAgent.id === "analyzer" ? "text-amber-500" : 
-                        currentAgent.id === "handwriting" ? "text-green-500" : "text-indigo-500"
+                        currentAgent.id === "handwriting" ? "text-green-500" : 
+                        currentAgent.id === "document-analyzer" ? "text-orange-500" : "text-indigo-500"
                       }`}>A</span>
                     </div>
                   )}
@@ -811,7 +905,7 @@ export default function Home() {
                     <div className="whitespace-pre-wrap">
                       {message.content.split('\n').map((line, i) => {
                         // For enhanced prompt display (single output)
-                        if (line.startsWith("Here's your enhanced prompt:") || line.startsWith("Here's the continued text:")) {
+                        if (line.startsWith("Here's your enhanced prompt:") || line.startsWith("Here's the continued text:") || line.startsWith("Here's the document analysis:")) {
                           return <div key={i} className="font-medium text-indigo-700 mb-2">{line}</div>;
                         }
                         
@@ -976,6 +1070,8 @@ export default function Home() {
                     ? "Enter a prompt to analyze..." 
                     : currentAgent.id === "handwriting"
                     ? "Enter text to continue, fix, shorten, or summarize..."
+                    : currentAgent.id === "document-analyzer"
+                    ? "Enter document text to analyze or use the Document Analyzer interface..."
                     : "Enter your prompt or ask for prompt assistance..."
                 }
                 value={inputValue}
@@ -1010,6 +1106,8 @@ export default function Home() {
                         ? "bg-amber-50 text-amber-700 border-amber-200"
                         : currentAgent.id === "handwriting"
                         ? "bg-green-50 text-green-700 border-green-200"
+                        : currentAgent.id === "document-analyzer"
+                        ? "bg-orange-50 text-orange-700 border-orange-200"
                         : "bg-white/50 border-gray-200/30"
                     }`}
                     onClick={toggleFooterAgents}
