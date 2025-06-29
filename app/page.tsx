@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
 import { analyzePrompt, enhancePrompt, processHandwriting, analyzeDocument } from "@/lib/groq-service"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { ContinueWriting } from "@/components/handwriting/continue-writing"
 import { GrammarFixer } from "@/components/handwriting/grammar-fixer"
 import { TextSummarizer } from "@/components/handwriting/text-summarizer"
@@ -66,7 +66,6 @@ interface PromptHistory {
 }
 
 export default function Home() {
-  const searchParams = useSearchParams()
   const router = useRouter()
 
   // State for messages in current chat
@@ -266,20 +265,6 @@ export default function Home() {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [])
-
-  // Check URL parameters to select the correct agent
-  useEffect(() => {
-    const agentParam = searchParams.get("agent")
-    if (agentParam) {
-      const selectedAgent = agents.find(agent => agent.id === agentParam)
-      if (selectedAgent) {
-        setCurrentAgent(selectedAgent)
-        if (selectedAgent.id === "handwriting") {
-          setShowHandwritingTools(true)
-        }
-      }
-    }
-  }, [searchParams, agents])
 
   // Optimized message sending with better error handling
   const handleSendMessage = useCallback(async () => {
@@ -624,7 +609,7 @@ export default function Home() {
                 >
                   <ArrowRight className="h-5 w-5 rotate-180" />
                 </Button>
-              </ToTooltipTrigger>
+              </TooltipTrigger>
               <TooltipContent side="right">
                 <p>Back to Chat</p>
               </TooltipContent>
