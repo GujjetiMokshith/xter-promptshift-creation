@@ -876,18 +876,6 @@ export default function Home() {
                         </p>
                       </div>
                     </div>
-
-                  <Link href="/handwriting" className="agent-card transition-smooth cursor-pointer hover:no-underline">
-                    <div className="agent-icon bg-blue-100">
-                      <ExternalLink size={16} className="text-blue-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-sm">Advanced Handwriting Tools</h3>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Access dedicated interfaces for continue writing, grammar fixing, and text summarizing.
-                      </p>
-                    </div>
-                  </Link>
                 </div>
               </div>
             </div>
