@@ -24,12 +24,15 @@ import {
   FileText,
   BookOpen,
   Palette,
+  Upload,
+  Search,
+  Lightbulb,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
-import { analyzePrompt, enhancePrompt, processHandwriting } from "@/lib/groq-service"
+import { analyzePrompt, enhancePrompt, processHandwriting, analyzeDocument } from "@/lib/groq-service"
 import { useSearchParams, useRouter } from "next/navigation"
 import { ContinueWriting } from "@/components/handwriting/continue-writing"
 import { GrammarFixer } from "@/components/handwriting/grammar-fixer"
@@ -41,6 +44,9 @@ interface Message {
   content: string
   role: "user" | "ai"
   timestamp: Date
+  documentContent?: string
+  analysisType?: "summarize" | "extract-keywords" | "q-and-a"
+  question?: string
 }
 
 interface Chat {
@@ -89,6 +95,12 @@ export default function Home() {
   const [showHandwritingTools, setShowHandwritingTools] = useState(false)
   const [activeHandwritingTool, setActiveHandwritingTool] = useState<string | null>(null)
 
+  // State for document analyzer
+  const [showDocumentOptions, setShowDocumentOptions] = useState(false)
+  const [documentContent, setDocumentContent] = useState("")
+  const [analysisType, setAnalysisType] = useState<"summarize" | "extract-keywords" | "q-and-a">("summarize")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // State for AI agents
   const [currentAgent, setCurrentAgent] = useState<Agent>({
     id: "enhancer",
@@ -107,7 +119,7 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Sample AI agents (updated handwriting assistant)
+  // Sample AI agents (updated with document analyzer)
   const agents: Agent[] = [
     {
       id: "enhancer",
@@ -122,6 +134,13 @@ export default function Home() {
       icon: <LineChart size={14} className="text-white" />,
       description: "Rates prompt quality based on clarity, specificity, and effectiveness.",
       color: "bg-amber-500",
+    },
+    {
+      id: "document",
+      name: "Document Analyzer",
+      icon: <FileText size={14} className="text-white" />,
+      description: "Chat with documents, extract insights, summaries, and get answers from any text or PDF.",
+      color: "bg-purple-500",
     },
     {
       id: "handwriting",
@@ -165,6 +184,31 @@ export default function Home() {
       description: "Professional drawing and handwriting",
       color: "bg-orange-500",
       component: <DrawingCanvas />
+    }
+  ]
+
+  // Document analysis options
+  const documentAnalysisOptions = [
+    {
+      id: "summarize",
+      name: "Summarize Document",
+      icon: <BookOpen className="h-5 w-5" />,
+      description: "Get a comprehensive summary",
+      color: "bg-blue-500"
+    },
+    {
+      id: "extract-keywords",
+      name: "Extract Keywords",
+      icon: <Lightbulb className="h-5 w-5" />,
+      description: "Find key terms and concepts",
+      color: "bg-amber-500"
+    },
+    {
+      id: "q-and-a",
+      name: "Ask Questions",
+      icon: <Search className="h-5 w-5" />,
+      description: "Chat with your document",
+      color: "bg-green-500"
     }
   ]
 
@@ -230,6 +274,9 @@ export default function Home() {
       if (!target.closest(".handwriting-tools-dropdown") && !target.closest(".handwriting-tools-button")) {
         setShowHandwritingTools(false)
       }
+      if (!target.closest(".document-options-dropdown") && !target.closest(".document-options-button")) {
+        setShowDocumentOptions(false)
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside)
@@ -247,10 +294,33 @@ export default function Home() {
         setCurrentAgent(selectedAgent)
         if (selectedAgent.id === "handwriting") {
           setShowHandwritingTools(true)
+        } else if (selectedAgent.id === "document") {
+          setShowDocumentOptions(true)
         }
       }
     }
   }, [searchParams])
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const content = e.target?.result as string
+        setDocumentContent(content)
+        setInputValue(`I've uploaded a document. Please ${analysisType === "q-and-a" ? "help me ask questions about it" : analysisType === "extract-keywords" ? "extract keywords from it" : "summarize it"}.`)
+      }
+      
+      if (file.type === 'application/pdf') {
+        // For PDF files, we'd need a PDF parser library
+        // For now, show a message about PDF support
+        alert('PDF support coming soon! Please convert to text format for now.')
+        return
+      } else {
+        reader.readAsText(file)
+      }
+    }
+  }
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return
@@ -266,6 +336,8 @@ export default function Home() {
       content: inputValue,
       role: "user",
       timestamp: new Date(),
+      documentContent: currentAgent.id === "document" ? documentContent : undefined,
+      analysisType: currentAgent.id === "document" ? analysisType : undefined,
     }
 
     setMessages((prev) => [...prev, userMessage])
@@ -300,9 +372,30 @@ export default function Home() {
             return { text: "I encountered an error while analyzing your prompt.", analysis: { score: 0, strengths: [], weaknesses: [], suggestions: [] } };
           });
           break;
+        case "document":
+          if (documentContent) {
+            // If we have document content, analyze it
+            if (analysisType === "q-and-a") {
+              response = await analyzeDocument(documentContent, "q-and-a", inputValue).catch(error => {
+                console.error("Error analyzing document:", error);
+                return { text: "I encountered an error while analyzing your document.", processedText: "" };
+              });
+            } else {
+              response = await analyzeDocument(documentContent, analysisType).catch(error => {
+                console.error("Error analyzing document:", error);
+                return { text: "I encountered an error while analyzing your document.", processedText: "" };
+              });
+            }
+          } else {
+            // No document uploaded yet
+            response = { 
+              text: "Please upload a document first using the upload button, then I can help you analyze it, extract insights, or answer questions about its content.",
+              processedText: "To get started with document analysis:\n\n1. Click the 'Upload Document' button\n2. Select a text file (.txt) or PDF\n3. Choose your analysis type (summarize, extract keywords, or Q&A)\n4. Ask me anything about your document!\n\nI can help you understand complex documents, find key information, and answer specific questions about the content."
+            };
+          }
+          break;
         case "handwriting":
           // For handwriting assistant, we'll default to "continue" action
-          // In a real implementation, you might want to detect the intent or ask the user
           response = await processHandwriting(inputValue, "continue").catch(error => {
             console.error("Error processing handwriting:", error);
             return { text: "I encountered an error while processing your text.", processedText: "" };
@@ -320,6 +413,16 @@ export default function Home() {
       } else if (currentAgent.id === "analyzer" && response.analysis) {
         const { score, strengths, weaknesses, suggestions } = response.analysis
         responseText = `Prompt Analysis Score: ${score}/100\n\n## Strengths\n${strengths.map((s) => `- ${s}`).join("\n")}\n\n## Areas for improvement\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\n## Suggestions\n${suggestions.map((s) => `- ${s}`).join("\n")}`
+      } else if (currentAgent.id === "document" && response.processedText) {
+        if (analysisType === "q-and-a" && documentContent) {
+          responseText = `**Answer based on your document:**\n\n${response.processedText}`
+        } else if (analysisType === "extract-keywords" && documentContent) {
+          responseText = `**Keywords extracted from your document:**\n\n${response.processedText}`
+        } else if (analysisType === "summarize" && documentContent) {
+          responseText = `**Document Summary:**\n\n${response.processedText}`
+        } else {
+          responseText = response.processedText
+        }
       } else if (currentAgent.id === "handwriting" && response.processedText) {
         responseText = `Here's the continued text:\n\n${response.processedText}`
       } else {
@@ -404,6 +507,13 @@ export default function Home() {
         setShowHandwritingTools(false)
         setActiveHandwritingTool(null)
       }
+
+      // If document analyzer is selected, show options
+      if (agent.id === "document") {
+        setShowDocumentOptions(true)
+      } else {
+        setShowDocumentOptions(false)
+      }
       
       // Reset messages to show empty chat with the new agent
       setMessages([])
@@ -434,6 +544,11 @@ export default function Home() {
     setMessages([]) // Clear messages when switching tools
   }
 
+  const selectDocumentAnalysis = (type: "summarize" | "extract-keywords" | "q-and-a") => {
+    setAnalysisType(type)
+    setShowDocumentOptions(false)
+  }
+
   const handlePromptClick = (prompt: string) => {
     setInputValue(prompt)
     inputRef.current?.focus()
@@ -442,11 +557,19 @@ export default function Home() {
   const toggleFooterAgents = () => {
     setShowFooterAgents(!showFooterAgents)
     setShowHandwritingTools(false)
+    setShowDocumentOptions(false)
   }
 
   const toggleHandwritingTools = () => {
     setShowHandwritingTools(!showHandwritingTools)
     setShowFooterAgents(false)
+    setShowDocumentOptions(false)
+  }
+
+  const toggleDocumentOptions = () => {
+    setShowDocumentOptions(!showDocumentOptions)
+    setShowFooterAgents(false)
+    setShowHandwritingTools(false)
   }
 
   const backToChat = () => {
@@ -729,7 +852,7 @@ export default function Home() {
 
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-medium">Your Prompt Tools</h2>
+                  <h2 className="font-medium">Your AI Tools</h2>
                   {hasApiKey && (
                     <div className="flex items-center gap-1 text-xs text-green-600">
                       <Key className="h-3 w-3" />
@@ -773,6 +896,21 @@ export default function Home() {
 
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "document"))}
+                  >
+                      <div className="agent-icon bg-purple-100">
+                        <FileText size={16} className="text-purple-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Document Analyzer</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Chat with documents, extract insights, summaries, and get answers from any text or PDF.
+                        </p>
+                      </div>
+                    </div>
+
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
                     onClick={() => selectAgent(agents.find(agent => agent.id === "handwriting"))}
                   >
                       <div className="agent-icon bg-green-100">
@@ -785,18 +923,6 @@ export default function Home() {
                         </p>
                       </div>
                     </div>
-
-                  <Link href="/document-analyzer" className="agent-card transition-smooth cursor-pointer hover:no-underline">
-                    <div className="agent-icon bg-purple-100">
-                      <FileText size={16} className="text-purple-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-sm">AI Document Analyzer</h3>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Extract insights, summaries, keywords, and answers from your documents using advanced AI.
-                      </p>
-                    </div>
-                  </Link>
 
                   <Link href="/handwriting" className="agent-card transition-smooth cursor-pointer hover:no-underline">
                     <div className="agent-icon bg-blue-100">
@@ -826,6 +952,7 @@ export default function Home() {
                       <span className={`text-xs font-bold ${
                         currentAgent.id === "enhancer" ? "text-indigo-500" : 
                         currentAgent.id === "analyzer" ? "text-amber-500" : 
+                        currentAgent.id === "document" ? "text-purple-500" :
                         currentAgent.id === "handwriting" ? "text-green-500" : "text-indigo-500"
                       }`}>A</span>
                     </div>
@@ -836,6 +963,13 @@ export default function Home() {
                         // For enhanced prompt display (single output)
                         if (line.startsWith("Here's your enhanced prompt:") || line.startsWith("Here's the continued text:")) {
                           return <div key={i} className="font-medium text-indigo-700 mb-2">{line}</div>;
+                        }
+                        
+                        // For document analysis headers
+                        if (line.startsWith("**Answer based on your document:**") || 
+                            line.startsWith("**Keywords extracted from your document:**") ||
+                            line.startsWith("**Document Summary:**")) {
+                          return <div key={i} className="font-medium text-purple-700 mb-2">{line.replace(/\*\*/g, '')}</div>;
                         }
                         
                         // For enhanced prompt content (quoted text)
@@ -970,7 +1104,12 @@ export default function Home() {
               {isTyping && (
                 <div className="message message-ai">
                   <div className="message-avatar">
-                    <span className="text-indigo-500 text-xs font-bold">A</span>
+                    <span className={`text-xs font-bold ${
+                      currentAgent.id === "enhancer" ? "text-indigo-500" : 
+                      currentAgent.id === "analyzer" ? "text-amber-500" : 
+                      currentAgent.id === "document" ? "text-purple-500" :
+                      currentAgent.id === "handwriting" ? "text-green-500" : "text-indigo-500"
+                    }`}>A</span>
                   </div>
                   <div className="message-content">
                     <p className="flex gap-1">
@@ -997,6 +1136,10 @@ export default function Home() {
                     ? "Enter a prompt to enhance..." 
                     : currentAgent.id === "analyzer"
                     ? "Enter a prompt to analyze..." 
+                    : currentAgent.id === "document"
+                    ? documentContent 
+                      ? (analysisType === "q-and-a" ? "Ask a question about your document..." : "What would you like me to do with your document?")
+                      : "Upload a document first, then ask me anything about it..."
                     : currentAgent.id === "handwriting"
                     ? "Enter text to continue, fix, shorten, or summarize..."
                     : "Enter your prompt or ask for prompt assistance..."
@@ -1006,6 +1149,26 @@ export default function Home() {
                 onKeyDown={handleKeyDown}
               />
               <div className="chat-input-buttons">
+                {/* Document upload button for document analyzer */}
+                {currentAgent.id === "document" && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".txt,.pdf"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="chat-input-button"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="h-5 w-5 text-gray-400" />
+                    </Button>
+                  </>
+                )}
                 <Button variant="ghost" size="icon" className="chat-input-button">
                   <Mic className="h-5 w-5 text-gray-400" />
                 </Button>
@@ -1031,6 +1194,8 @@ export default function Home() {
                         ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
                         : currentAgent.id === "analyzer"
                         ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : currentAgent.id === "document"
+                        ? "bg-purple-50 text-purple-700 border-purple-200"
                         : currentAgent.id === "handwriting"
                         ? "bg-green-50 text-green-700 border-green-200"
                         : "bg-white/50 border-gray-200/30"
@@ -1102,6 +1267,47 @@ export default function Home() {
                               <div>
                                 <div className="text-sm font-medium">{tool.name}</div>
                                 <div className="text-xs text-gray-500">{tool.description}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Document Analysis Options Dropdown */}
+                {currentAgent.id === "document" && (
+                  <div className="relative">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs flex items-center gap-1 hover:bg-purple-50/50 transition-smooth border document-options-button bg-purple-50 text-purple-700 border-purple-200"
+                      onClick={toggleDocumentOptions}
+                    >
+                      <FileText className="h-3 w-3" />
+                      {analysisType === "q-and-a" ? "Q&A Mode" : analysisType === "extract-keywords" ? "Keywords" : "Summary"}
+                      <ChevronDown className="h-3 w-3 ml-1 text-gray-400" />
+                    </Button>
+
+                    {showDocumentOptions && (
+                      <div className="footer-agents-dropdown document-options-dropdown">
+                        <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
+                          <h3 className="font-medium text-sm">Analysis Type</h3>
+                        </div>
+                        <div className="p-2">
+                          {documentAnalysisOptions.map((option) => (
+                            <div
+                              key={option.id}
+                              className={`agent-option ${analysisType === option.id ? "active" : ""}`}
+                              onClick={() => selectDocumentAnalysis(option.id as any)}
+                            >
+                              <div className={`w-6 h-6 ${option.color} rounded-md flex items-center justify-center text-white`}>
+                                {option.icon}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium">{option.name}</div>
+                                <div className="text-xs text-gray-500">{option.description}</div>
                               </div>
                             </div>
                           ))}
