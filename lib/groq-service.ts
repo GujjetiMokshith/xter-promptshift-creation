@@ -18,12 +18,26 @@ export interface GroqResponse {
   }
   enhancedPrompt?: string
   processedText?: string
+  response?: string
+  emoji?: string
+  detectedTopic?: string
+  questions?: QuizQuestion[]
 }
 
 export interface GroqError {
   error: string
   message: string
   statusCode: number
+}
+
+export interface QuizQuestion {
+  id: string
+  type: "multiple-choice" | "true-false" | "short-answer"
+  question: string
+  options?: string[]
+  correctAnswer: string
+  explanation: string
+  difficulty: "easy" | "medium" | "hard"
 }
 
 // Cache for responses to improve performance
@@ -57,12 +71,20 @@ function debounce(key: string, func: Function, delay: number) {
 // Main function to call Groq API with caching and optimization
 export async function callGroqAPI(
   prompt: string,
-  mode: "analyze" | "enhance" | "handwriting" | "document-analysis",
+  mode: "analyze" | "enhance" | "handwriting" | "document-analysis" | "educational-chat" | "quiz-generation",
   options?: {
     toneStyle?: "formal" | "casual" | "creative" | "technical"
     actionType?: "continue" | "grammar" | "shorten" | "summarize"
     analysisType?: "summarize" | "extract-keywords" | "q-and-a"
     question?: string
+    topic?: string
+    level?: "beginner" | "intermediate" | "advanced"
+    personality?: "friendly" | "professional" | "enthusiastic"
+    conversationHistory?: any[]
+    difficulty?: "easy" | "medium" | "hard"
+    questionCount?: number
+    questionTypes?: string[]
+    customContent?: string
   },
 ): Promise<GroqResponse> {
   try {
@@ -112,9 +134,165 @@ function cleanCache() {
 // Process the actual request
 async function processRequest(
   prompt: string,
-  mode: "analyze" | "enhance" | "handwriting" | "document-analysis",
+  mode: "analyze" | "enhance" | "handwriting" | "document-analysis" | "educational-chat" | "quiz-generation",
   options?: any
 ): Promise<GroqResponse> {
+  if (mode === "educational-chat") {
+    const { topic, level = "beginner", personality = "friendly", conversationHistory = [] } = options || {};
+    
+    let systemPrompt = `You are an enthusiastic and knowledgeable AI tutor. Your goal is to make learning fun, engaging, and accessible for students of all levels.
+
+PERSONALITY TRAITS:
+- ${personality === "friendly" ? "Warm, approachable, and encouraging" : 
+     personality === "professional" ? "Knowledgeable, structured, and clear" : 
+     "Energetic, exciting, and motivational"}
+- Use emojis naturally to make conversations lively and engaging
+- Adapt explanations to the student's level: ${level}
+- Be patient and supportive, celebrating progress
+- Ask follow-up questions to ensure understanding
+- Provide examples and analogies to clarify concepts
+
+TEACHING APPROACH:
+- Break down complex topics into digestible parts
+- Use real-world examples and analogies
+- Encourage questions and curiosity
+- Provide positive reinforcement
+- Suggest practical applications
+- Check for understanding regularly
+
+EMOJI USAGE:
+- Use relevant emojis to enhance explanations (📚 for books, 🔬 for science, 💡 for ideas, etc.)
+- Keep it natural and not overwhelming (2-4 emojis per response)
+- Match emojis to the subject matter and context
+
+LEVEL ADAPTATION:
+- Beginner: Simple language, basic concepts, lots of examples
+- Intermediate: More detailed explanations, some technical terms
+- Advanced: Complex concepts, technical language, deeper analysis
+
+Always be encouraging and make learning feel like an exciting journey of discovery!`;
+
+    const contextPrompt = conversationHistory.length > 0 
+      ? `Previous conversation context:\n${conversationHistory.slice(-3).map(msg => `${msg.role}: ${msg.content}`).join('\n')}\n\nStudent's current question: ${prompt}`
+      : `Student's question: ${prompt}`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: contextPrompt
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.8,
+      max_tokens: 1000,
+      stream: false,
+    });
+
+    const response = completion.choices[0]?.message?.content?.trim() || "I'm here to help you learn! What would you like to explore? 🤔";
+    
+    // Extract emoji from response for avatar
+    const emojiMatch = response.match(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u);
+    const emoji = emojiMatch ? emojiMatch[0] : "🎓";
+    
+    // Try to detect topic from the conversation
+    const topicKeywords = ["math", "science", "history", "programming", "language", "literature", "physics", "chemistry", "biology"];
+    const detectedTopic = topicKeywords.find(keyword => 
+      prompt.toLowerCase().includes(keyword) || response.toLowerCase().includes(keyword)
+    );
+
+    return {
+      text: prompt,
+      response,
+      emoji,
+      detectedTopic: detectedTopic || topic
+    };
+  }
+
+  if (mode === "quiz-generation") {
+    const { 
+      topic, 
+      difficulty = "medium", 
+      questionCount = 5, 
+      questionTypes = ["multiple-choice"], 
+      customContent 
+    } = options || {};
+
+    const systemPrompt = `You are an expert quiz generator. Create engaging, educational quizzes that test knowledge effectively.
+
+QUIZ GENERATION GUIDELINES:
+1. Create exactly ${questionCount} questions
+2. Use these question types: ${questionTypes.join(", ")}
+3. Difficulty level: ${difficulty}
+4. Topic: ${topic}
+${customContent ? `5. Base questions on this content: ${customContent}` : ""}
+
+QUESTION QUALITY STANDARDS:
+- Clear, unambiguous wording
+- Appropriate difficulty for ${difficulty} level
+- Educational value and relevance
+- Avoid trick questions or overly obscure facts
+- Include helpful explanations for learning
+
+RESPONSE FORMAT:
+Return a JSON object with this exact structure:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "type": "multiple-choice",
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": "Option B",
+      "explanation": "Explanation of why this is correct and educational context",
+      "difficulty": "${difficulty}"
+    }
+  ]
+}
+
+For true-false questions, use options: ["True", "False"]
+For short-answer questions, omit the options array
+Ensure all questions are educational and promote learning.`;
+
+    const userPrompt = customContent 
+      ? `Generate a ${questionCount}-question quiz about "${topic}" based on this content:\n\n${customContent}`
+      : `Generate a ${questionCount}-question quiz about "${topic}" for ${difficulty} level learners.`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: userPrompt
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.7,
+      max_tokens: 2000,
+      stream: false,
+    });
+
+    const responseText = completion.choices[0]?.message?.content?.trim() || '';
+    
+    try {
+      const quizData = JSON.parse(responseText);
+      return {
+        text: prompt,
+        questions: quizData.questions || []
+      };
+    } catch (parseError) {
+      console.error("Failed to parse quiz JSON:", parseError);
+      return getEnhancedFallbackResponse(prompt, mode, options);
+    }
+  }
+
   if (mode === "document-analysis") {
     const analysisType = options?.analysisType || "summarize";
     let systemPrompt = "";
@@ -413,8 +591,79 @@ Return ONLY the summary. Do not add explanations or comments.`;
 }
 
 // Enhanced fallback responses that provide much better examples
-function getEnhancedFallbackResponse(prompt: string, mode: "analyze" | "enhance" | "handwriting" | "document-analysis", options?: any): GroqResponse {
+function getEnhancedFallbackResponse(prompt: string, mode: "analyze" | "enhance" | "handwriting" | "document-analysis" | "educational-chat" | "quiz-generation", options?: any): GroqResponse {
   switch (mode) {
+    case "educational-chat":
+      const level = options?.level || "beginner";
+      const personality = options?.personality || "friendly";
+      
+      let response = "";
+      let emoji = "🎓";
+      
+      if (prompt.toLowerCase().includes("math")) {
+        response = `Great question about math! 📊 Let me help you understand this step by step. ${level === "beginner" ? "We'll start with the basics and build up from there! 🌱" : level === "intermediate" ? "I'll explain the concepts and show you some examples. 📈" : "Let's dive into the advanced concepts and explore the theory behind it. 🧮"}`;
+        emoji = "🔢";
+      } else if (prompt.toLowerCase().includes("science")) {
+        response = `Science is fascinating! 🔬 ${personality === "enthusiastic" ? "I'm so excited to explore this with you! 🎉" : "Let me explain this concept clearly."} ${level === "beginner" ? "We'll start with simple observations and build understanding. 🌱" : "Let's examine the scientific principles involved. ⚗️"}`;
+        emoji = "🔬";
+      } else {
+        response = `That's a wonderful question! 💡 I love helping students learn new things. ${personality === "friendly" ? "Let's explore this together in a fun way! 😊" : personality === "enthusiastic" ? "This is going to be an amazing learning adventure! 🚀" : "I'll provide you with a clear, structured explanation."} What specific aspect would you like to focus on first? 🤔`;
+        emoji = "🎓";
+      }
+      
+      return {
+        text: prompt,
+        response,
+        emoji,
+        detectedTopic: options?.topic
+      };
+
+    case "quiz-generation":
+      const questionCount = options?.questionCount || 5;
+      const difficulty = options?.difficulty || "medium";
+      const topic = options?.topic || "General Knowledge";
+      
+      const sampleQuestions: QuizQuestion[] = [];
+      
+      for (let i = 1; i <= questionCount; i++) {
+        if (topic.toLowerCase().includes("math")) {
+          sampleQuestions.push({
+            id: `q${i}`,
+            type: "multiple-choice",
+            question: `What is the result of 15 + 27?`,
+            options: ["40", "42", "45", "48"],
+            correctAnswer: "42",
+            explanation: "15 + 27 = 42. This is basic addition where we combine the two numbers.",
+            difficulty: difficulty as "easy" | "medium" | "hard"
+          });
+        } else if (topic.toLowerCase().includes("science")) {
+          sampleQuestions.push({
+            id: `q${i}`,
+            type: "multiple-choice",
+            question: `What is the chemical symbol for water?`,
+            options: ["H2O", "CO2", "NaCl", "O2"],
+            correctAnswer: "H2O",
+            explanation: "Water is composed of two hydrogen atoms and one oxygen atom, hence H2O.",
+            difficulty: difficulty as "easy" | "medium" | "hard"
+          });
+        } else {
+          sampleQuestions.push({
+            id: `q${i}`,
+            type: "multiple-choice",
+            question: `Which of the following is a key benefit of continuous learning?`,
+            options: ["Personal growth", "Career advancement", "Adaptability", "All of the above"],
+            correctAnswer: "All of the above",
+            explanation: "Continuous learning provides personal growth, career advancement opportunities, and helps develop adaptability in a changing world.",
+            difficulty: difficulty as "easy" | "medium" | "hard"
+          });
+        }
+      }
+      
+      return {
+        text: prompt,
+        questions: sampleQuestions
+      };
+
     case "document-analysis":
       const analysisType = options?.analysisType || "summarize";
       let processedText = "";
@@ -824,4 +1073,23 @@ export function processHandwriting(text: string, actionType: "continue" | "gramm
 
 export function analyzeDocument(text: string, analysisType: "summarize" | "extract-keywords" | "q-and-a", question?: string) {
   return callGroqAPI(text, "document-analysis", { analysisType, question })
+}
+
+export function processEducationalChat(message: string, options: {
+  topic?: string
+  level?: "beginner" | "intermediate" | "advanced"
+  personality?: "friendly" | "professional" | "enthusiastic"
+  conversationHistory?: any[]
+}) {
+  return callGroqAPI(message, "educational-chat", options)
+}
+
+export function generateQuiz(options: {
+  topic: string
+  difficulty?: "easy" | "medium" | "hard"
+  questionCount?: number
+  questionTypes?: string[]
+  customContent?: string
+}) {
+  return callGroqAPI(options.topic, "quiz-generation", options)
 }

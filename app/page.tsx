@@ -23,6 +23,7 @@ import {
   FileText,
   BookOpen,
   Palette,
+  GraduationCap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,6 +36,7 @@ import { GrammarFixer } from "@/components/handwriting/grammar-fixer"
 import { TextSummarizer } from "@/components/handwriting/text-summarizer"
 import { DrawingCanvas } from "@/components/handwriting/drawing-canvas"
 import { DocumentAnalyzer } from "@/components/document-analyzer"
+import { EducationalTools } from "@/components/educational/educational-tools"
 
 interface Message {
   id: string
@@ -91,6 +93,9 @@ export default function Home() {
   // State for document analyzer
   const [showDocumentAnalyzer, setShowDocumentAnalyzer] = useState(false)
 
+  // State for educational tools
+  const [showEducationalTools, setShowEducationalTools] = useState(false)
+
   // State for AI agents
   const [currentAgent, setCurrentAgent] = useState<Agent>({
     id: "enhancer",
@@ -138,6 +143,13 @@ export default function Home() {
       icon: <FileText size={14} className="text-white" />,
       description: "Upload and analyze documents with AI-powered insights and summaries.",
       color: "bg-orange-500",
+    },
+    {
+      id: "educational-tools",
+      name: "Educational Tools",
+      icon: <GraduationCap size={14} className="text-white" />,
+      description: "AI Chat Tutor and Quiz Generator for interactive learning experiences.",
+      color: "bg-purple-500",
     },
   ], [])
 
@@ -421,6 +433,7 @@ export default function Home() {
       setShowHandwritingTools(false)
       setActiveHandwritingTool(null)
       setShowDocumentAnalyzer(false)
+      setShowEducationalTools(false)
       
       // If handwriting assistant is selected, show tools
       if (agent.id === "handwriting") {
@@ -428,6 +441,9 @@ export default function Home() {
       } else if (agent.id === "document-analyzer") {
         setShowDocumentAnalyzer(true)
         return // Don't create new chat for document analyzer
+      } else if (agent.id === "educational-tools") {
+        setShowEducationalTools(true)
+        return // Don't create new chat for educational tools
       }
       
       // Reset messages to show empty chat with the new agent
@@ -477,8 +493,55 @@ export default function Home() {
   const backToChat = useCallback(() => {
     setActiveHandwritingTool(null)
     setShowDocumentAnalyzer(false)
+    setShowEducationalTools(false)
     setMessages([])
   }, [])
+
+  // If educational tools is active, show its component
+  if (showEducationalTools) {
+    return (
+      <div className="app-container">
+        <TooltipProvider delayDuration={300}>
+          <div className="sidebar">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
+                  onClick={backToChat}
+                >
+                  <ArrowRight className="h-5 w-5 rotate-180" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Back to Chat</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex flex-col items-center gap-8 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="sidebar-icon transition-smooth active">
+                    <GraduationCap className="h-5 w-5" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Educational Tools</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+
+        <div className="flex-1 flex flex-col blue-glow-top">
+          <div className="content-area">
+            <EducationalTools onBackToMain={backToChat} />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // If document analyzer is active, show its component
   if (showDocumentAnalyzer) {
@@ -864,6 +927,21 @@ export default function Home() {
                         </p>
                       </div>
                     </div>
+
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer col-span-2"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "educational-tools")!)}
+                  >
+                      <div className="agent-icon bg-purple-100">
+                        <GraduationCap size={16} className="text-purple-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Educational Tools</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          AI Chat Tutor for interactive learning and Quiz Generator for testing knowledge on any topic.
+                        </p>
+                      </div>
+                    </div>
                 </div>
               </div>
             </div>
@@ -882,7 +960,8 @@ export default function Home() {
                         currentAgent.id === "enhancer" ? "text-indigo-500" : 
                         currentAgent.id === "analyzer" ? "text-amber-500" : 
                         currentAgent.id === "handwriting" ? "text-green-500" : 
-                        currentAgent.id === "document-analyzer" ? "text-orange-500" : "text-indigo-500"
+                        currentAgent.id === "document-analyzer" ? "text-orange-500" : 
+                        currentAgent.id === "educational-tools" ? "text-purple-500" : "text-indigo-500"
                       }`}>A</span>
                     </div>
                   )}
@@ -1057,11 +1136,14 @@ export default function Home() {
                     ? "Enter text to continue, fix, shorten, or summarize..."
                     : currentAgent.id === "document-analyzer"
                     ? "Enter document text to analyze or use the Document Analyzer interface..."
+                    : currentAgent.id === "educational-tools"
+                    ? "Educational tools are available in the interface above..."
                     : "Enter your prompt or ask for prompt assistance..."
                 }
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
+                disabled={currentAgent.id === "educational-tools"}
               />
               <div className="chat-input-buttons">
                 <Button variant="ghost" size="icon" className="chat-input-button">
@@ -1072,7 +1154,7 @@ export default function Home() {
                   size="icon"
                   className={`chat-input-button ${inputValue.trim() ? "glow-button" : ""}`}
                   onClick={handleSendMessage}
-                  disabled={!inputValue.trim() || isTyping}
+                  disabled={!inputValue.trim() || isTyping || currentAgent.id === "educational-tools"}
                 >
                   <Send className={`h-5 w-5 ${inputValue.trim() ? "text-blue-500" : "text-gray-400"}`} />
                 </Button>
@@ -1093,6 +1175,8 @@ export default function Home() {
                         ? "bg-green-50 text-green-700 border-green-200"
                         : currentAgent.id === "document-analyzer"
                         ? "bg-orange-50 text-orange-700 border-orange-200"
+                        : currentAgent.id === "educational-tools"
+                        ? "bg-purple-50 text-purple-700 border-purple-200"
                         : "bg-white/50 border-gray-200/30"
                     }`}
                     onClick={toggleFooterAgents}
