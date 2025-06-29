@@ -1,7 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
-// Make sure CSS is imported
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import "./globals.css"
 import {
   Plus,
@@ -111,8 +110,8 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Sample AI agents (updated with document analyzer)
-  const agents: Agent[] = [
+  // Memoized AI agents to prevent unnecessary re-renders
+  const agents: Agent[] = useMemo(() => [
     {
       id: "enhancer",
       name: "Prompt Enhancer",
@@ -141,10 +140,10 @@ export default function Home() {
       description: "Upload and analyze documents with AI-powered insights and summaries.",
       color: "bg-orange-500",
     },
-  ]
+  ], [])
 
-  // Handwriting tools
-  const handwritingTools = [
+  // Memoized handwriting tools
+  const handwritingTools = useMemo(() => [
     {
       id: "continue",
       name: "Continue Writing",
@@ -177,16 +176,24 @@ export default function Home() {
       color: "bg-orange-500",
       component: <DrawingCanvas />
     }
-  ]
+  ], [])
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
+  // Optimized auto-scroll with debouncing
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [])
+
+  useEffect(() => {
+    const timeoutId = setTimeout(scrollToBottom, 100)
+    return () => clearTimeout(timeoutId)
+  }, [messages, scrollToBottom])
 
   // Focus input on load
   useEffect(() => {
-    inputRef.current?.focus()
+    const timeoutId = setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+    return () => clearTimeout(timeoutId)
   }, [])
 
   // Check for API key
@@ -195,15 +202,14 @@ export default function Home() {
     setHasApiKey(!!apiKey && apiKey !== 'your_groq_api_key_here')
   }, [])
 
-  // Load chats from localStorage on initial load
+  // Optimized localStorage operations with error handling
   useEffect(() => {
-    const savedChats = localStorage.getItem("typingmind-chats")
-    if (savedChats) {
-      try {
+    try {
+      const savedChats = localStorage.getItem("typingmind-chats")
+      if (savedChats) {
         const parsedChats = JSON.parse(savedChats)
         setChats(parsedChats)
 
-        // If there are chats, set the current chat to the most recent one
         if (parsedChats.length > 0) {
           const mostRecentChat = parsedChats.sort(
             (a: Chat, b: Chat) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -211,27 +217,39 @@ export default function Home() {
           setCurrentChatId(mostRecentChat.id)
           setMessages(mostRecentChat.messages)
         }
-      } catch (error) {
-        console.error("Error parsing saved chats:", error)
       }
+    } catch (error) {
+      console.error("Error loading saved chats:", error)
+      localStorage.removeItem("typingmind-chats") // Clear corrupted data
     }
   }, [])
 
-  // Save chats to localStorage whenever they change
+  // Debounced save to localStorage
   useEffect(() => {
     if (chats.length > 0) {
-      localStorage.setItem("typingmind-chats", JSON.stringify(chats))
+      const timeoutId = setTimeout(() => {
+        try {
+          localStorage.setItem("typingmind-chats", JSON.stringify(chats))
+        } catch (error) {
+          console.error("Error saving chats:", error)
+        }
+      }, 500)
+      return () => clearTimeout(timeoutId)
     }
   }, [chats])
 
-  // Update current chat in chats array whenever messages change
+  // Optimized chat update
   useEffect(() => {
     if (currentChatId && messages.length > 0) {
-      setChats((prevChats) => prevChats.map((chat) => (chat.id === currentChatId ? { ...chat, messages } : chat)))
+      setChats((prevChats) => 
+        prevChats.map((chat) => 
+          chat.id === currentChatId ? { ...chat, messages } : chat
+        )
+      )
     }
   }, [messages, currentChatId])
 
-  // Close dropdowns when clicking outside
+  // Optimized click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
@@ -243,7 +261,7 @@ export default function Home() {
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside, { passive: true })
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
@@ -258,14 +276,13 @@ export default function Home() {
         setCurrentAgent(selectedAgent)
         if (selectedAgent.id === "handwriting") {
           setShowHandwritingTools(true)
-        } else if (selectedAgent.id === "document-analyzer") {
-          setShowDocumentAnalyzer(true)
         }
       }
     }
-  }, [searchParams])
+  }, [searchParams, agents])
 
-  const handleSendMessage = async () => {
+  // Optimized message sending with better error handling
+  const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim()) return
 
     // Create a new chat if there isn't one
@@ -289,41 +306,38 @@ export default function Home() {
       content: inputValue,
       timestamp: new Date(),
     }
-    setPromptHistory((prev) => [newPrompt, ...prev.slice(0, 49)]) // Keep only the last 50 prompts
+    setPromptHistory((prev) => [newPrompt, ...prev.slice(0, 49)])
 
+    const currentInput = inputValue
     setInputValue("")
 
     // Simulate AI typing
     setIsTyping(true)
 
     try {
-      // Use the Groq API based on the current agent
       let response
 
       switch (currentAgent.id) {
         case "enhancer":
-          response = await enhancePrompt(inputValue).catch(error => {
+          response = await enhancePrompt(currentInput).catch(error => {
             console.error("Error enhancing prompt:", error);
             return { text: "I encountered an error while enhancing your prompt.", enhancedPrompt: "" };
           });
           break;
         case "analyzer":
-          response = await analyzePrompt(inputValue).catch(error => {
+          response = await analyzePrompt(currentInput).catch(error => {
             console.error("Error analyzing prompt:", error);
             return { text: "I encountered an error while analyzing your prompt.", analysis: { score: 0, strengths: [], weaknesses: [], suggestions: [] } };
           });
           break;
         case "handwriting":
-          // For handwriting assistant, we'll default to "continue" action
-          // In a real implementation, you might want to detect the intent or ask the user
-          response = await processHandwriting(inputValue, "continue").catch(error => {
+          response = await processHandwriting(currentInput, "continue").catch(error => {
             console.error("Error processing handwriting:", error);
             return { text: "I encountered an error while processing your text.", processedText: "" };
           });
           break;
         case "document-analyzer":
-          // For document analyzer, we'll default to "summarize" action
-          response = await analyzeDocument(inputValue, "summarize").catch(error => {
+          response = await analyzeDocument(currentInput, "summarize").catch(error => {
             console.error("Error analyzing document:", error);
             return { text: "I encountered an error while analyzing your document.", processedText: "" };
           });
@@ -348,7 +362,7 @@ export default function Home() {
         responseText = response.text || "I processed your request but couldn't generate a proper response."
       }
 
-      // Add AI response
+      // Add AI response with delay for natural feel
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: responseText,
@@ -359,11 +373,10 @@ export default function Home() {
       setTimeout(() => {
         setMessages((prev) => [...prev, aiMessage])
         setIsTyping(false)
-      }, 1000) // Small delay for natural feel
+      }, 1000)
     } catch (error) {
-      console.error("Error processing with Groq API:", error)
+      console.error("Error processing with AI service:", error)
 
-      // Fallback response
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: "I'm sorry, I encountered an error while processing your request. Please try again later.",
@@ -376,17 +389,16 @@ export default function Home() {
         setIsTyping(false)
       }, 1000)
     }
-  }
+  }, [inputValue, currentChatId, currentAgent.id])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
     }
-  }
+  }, [handleSendMessage])
 
-  const createNewChat = () => {
-    // Create a new chat
+  const createNewChat = useCallback(() => {
     const newChatId = Date.now().toString()
     const newChat: Chat = {
       id: newChatId,
@@ -401,20 +413,21 @@ export default function Home() {
     setMessages([])
     setShowChatHistory(false)
 
-    // Focus the input
-    inputRef.current?.focus()
-  }
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+  }, [currentAgent.id])
 
-  const selectChat = (chatId: string) => {
+  const selectChat = useCallback((chatId: string) => {
     const selectedChat = chats.find((chat) => chat.id === chatId)
     if (selectedChat) {
       setCurrentChatId(chatId)
       setMessages(selectedChat.messages)
       setShowChatHistory(false)
     }
-  }
+  }, [chats])
 
-  const selectAgent = (agent: Agent) => {
+  const selectAgent = useCallback((agent: Agent) => {
     if (agent) {
       setCurrentAgent(agent)
       setShowFooterAgents(false)
@@ -453,40 +466,39 @@ export default function Home() {
         inputRef.current?.focus()
       }, 100)
     }
-  }
+  }, [])
 
-  const selectHandwritingTool = (toolId: string) => {
+  const selectHandwritingTool = useCallback((toolId: string) => {
     setActiveHandwritingTool(toolId)
     setShowHandwritingTools(false)
-    setMessages([]) // Clear messages when switching tools
-  }
+    setMessages([])
+  }, [])
 
-  const handlePromptClick = (prompt: string) => {
+  const handlePromptClick = useCallback((prompt: string) => {
     setInputValue(prompt)
     inputRef.current?.focus()
-  }
+  }, [])
 
-  const toggleFooterAgents = () => {
+  const toggleFooterAgents = useCallback(() => {
     setShowFooterAgents(!showFooterAgents)
     setShowHandwritingTools(false)
-  }
+  }, [showFooterAgents])
 
-  const toggleHandwritingTools = () => {
+  const toggleHandwritingTools = useCallback(() => {
     setShowHandwritingTools(!showHandwritingTools)
     setShowFooterAgents(false)
-  }
+  }, [showHandwritingTools])
 
-  const backToChat = () => {
+  const backToChat = useCallback(() => {
     setActiveHandwritingTool(null)
     setShowDocumentAnalyzer(false)
     setMessages([])
-  }
+  }, [])
 
   // If document analyzer is active, show its component
   if (showDocumentAnalyzer) {
     return (
       <div className="app-container">
-        {/* Transparent sidebar with tooltips */}
         <TooltipProvider delayDuration={300}>
           <div className="sidebar">
             <Tooltip>
@@ -520,7 +532,6 @@ export default function Home() {
           </div>
         </TooltipProvider>
 
-        {/* Main Content */}
         <div className="flex-1 flex flex-col blue-glow-top">
           <div className="content-area">
             <DocumentAnalyzer onBackToMain={backToChat} />
@@ -537,7 +548,6 @@ export default function Home() {
     if (tool?.id === 'canvas') {
       return (
         <div className="h-screen">
-          {/* Canvas Header */}
           <div className="bg-white border-b border-gray-200 px-4 py-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -568,12 +578,10 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Canvas Component */}
           <div className="h-[calc(100vh-60px)]">
             {tool.component}
           </div>
 
-          {/* Handwriting Tools Dropdown for Canvas */}
           {showHandwritingTools && (
             <div className="absolute top-16 right-4 footer-agents-dropdown handwriting-tools-dropdown">
               <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
@@ -604,7 +612,6 @@ export default function Home() {
     
     return (
       <div className="app-container">
-        {/* Transparent sidebar with tooltips */}
         <TooltipProvider delayDuration={300}>
           <div className="sidebar">
             <Tooltip>
@@ -617,7 +624,7 @@ export default function Home() {
                 >
                   <ArrowRight className="h-5 w-5 rotate-180" />
                 </Button>
-              </TooltipTrigger>
+              </ToTooltipTrigger>
               <TooltipContent side="right">
                 <p>Back to Chat</p>
               </TooltipContent>
@@ -626,9 +633,7 @@ export default function Home() {
             <div className="flex flex-col items-center gap-8 mt-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div
-                    className="sidebar-icon transition-smooth active"
-                  >
+                  <div className="sidebar-icon transition-smooth active">
                     <PenTool className="h-5 w-5" />
                   </div>
                 </TooltipTrigger>
@@ -640,7 +645,6 @@ export default function Home() {
           </div>
         </TooltipProvider>
 
-        {/* Main Content */}
         <div className="flex-1 flex flex-col blue-glow-top">
           <div className="content-area">
             <div className="max-w-6xl mx-auto h-full">
@@ -661,7 +665,6 @@ export default function Home() {
 
   return (
     <div className="app-container">
-      {/* Transparent sidebar with tooltips */}
       <TooltipProvider delayDuration={300}>
         <div className="sidebar">
           <Tooltip>
@@ -817,7 +820,7 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-4">
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
-                    onClick={() => selectAgent(agents.find(agent => agent.id === "enhancer"))}
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "enhancer")!)}
                   >
                       <div className="agent-icon bg-indigo-100">
                         <Wand2 size={16} className="text-indigo-500" />
@@ -833,7 +836,7 @@ export default function Home() {
 
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
-                    onClick={() => selectAgent(agents.find(agent => agent.id === "analyzer"))}
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "analyzer")!)}
                   >
                       <div className="agent-icon bg-amber-100">
                         <LineChart size={16} className="text-amber-500" />
@@ -849,7 +852,7 @@ export default function Home() {
 
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
-                    onClick={() => selectAgent(agents.find(agent => agent.id === "handwriting"))}
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "handwriting")!)}
                   >
                       <div className="agent-icon bg-green-100">
                         <PenTool size={16} className="text-green-500" />
@@ -864,7 +867,7 @@ export default function Home() {
 
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
-                    onClick={() => selectAgent(agents.find(agent => agent.id === "document-analyzer"))}
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "document-analyzer")!)}
                   >
                       <div className="agent-icon bg-orange-100">
                         <FileText size={16} className="text-orange-500" />

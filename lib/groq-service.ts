@@ -1,9 +1,11 @@
 import Groq from 'groq-sdk';
 
-// Initialize Groq client
+// Initialize Groq client with optimized configuration
 const groq = new Groq({
   apiKey: process.env.NEXT_PUBLIC_GROQ_API_KEY || '',
-  dangerouslyAllowBrowser: true // Allow browser usage for client-side calls
+  dangerouslyAllowBrowser: true,
+  timeout: 30000, // 30 second timeout
+  maxRetries: 2, // Retry failed requests
 });
 
 export interface GroqResponse {
@@ -24,7 +26,35 @@ export interface GroqError {
   statusCode: number
 }
 
-// Main function to call Groq API
+// Cache for responses to improve performance
+const responseCache = new Map<string, { response: GroqResponse; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Debounce function to prevent rapid API calls
+const debounceMap = new Map<string, NodeJS.Timeout>();
+
+function debounce(key: string, func: Function, delay: number) {
+  if (debounceMap.has(key)) {
+    clearTimeout(debounceMap.get(key)!);
+  }
+  
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(async () => {
+      try {
+        const result = await func();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      } finally {
+        debounceMap.delete(key);
+      }
+    }, delay);
+    
+    debounceMap.set(key, timeoutId);
+  });
+}
+
+// Main function to call Groq API with caching and optimization
 export async function callGroqAPI(
   prompt: string,
   mode: "analyze" | "enhance" | "handwriting" | "document-analysis",
@@ -36,19 +66,63 @@ export async function callGroqAPI(
   },
 ): Promise<GroqResponse> {
   try {
+    // Create cache key
+    const cacheKey = `${mode}-${prompt}-${JSON.stringify(options)}`;
+    
+    // Check cache first
+    const cached = responseCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.response;
+    }
+
     if (!process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY === 'your_groq_api_key_here') {
       console.warn("Groq API key not found or not configured, using enhanced fallback response");
       return getEnhancedFallbackResponse(prompt, mode, options);
     }
 
-    if (mode === "document-analysis") {
-      const analysisType = options?.analysisType || "summarize";
-      let systemPrompt = "";
-      let userPrompt = "";
+    // Use debouncing for rapid requests
+    const response = await debounce(cacheKey, async () => {
+      return await processRequest(prompt, mode, options);
+    }, 300) as GroqResponse;
 
-      switch (analysisType) {
-        case "summarize":
-          systemPrompt = `You are an expert document analyst specializing in creating comprehensive summaries. Your task is to analyze the provided document and create a clear, well-structured summary that captures all essential information.
+    // Cache the response
+    responseCache.set(cacheKey, { response, timestamp: Date.now() });
+
+    // Clean old cache entries
+    cleanCache();
+
+    return response;
+    
+  } catch (error) {
+    console.error("Groq API error:", error);
+    return getEnhancedFallbackResponse(prompt, mode, options);
+  }
+}
+
+// Clean old cache entries
+function cleanCache() {
+  const now = Date.now();
+  for (const [key, value] of responseCache.entries()) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      responseCache.delete(key);
+    }
+  }
+}
+
+// Process the actual request
+async function processRequest(
+  prompt: string,
+  mode: "analyze" | "enhance" | "handwriting" | "document-analysis",
+  options?: any
+): Promise<GroqResponse> {
+  if (mode === "document-analysis") {
+    const analysisType = options?.analysisType || "summarize";
+    let systemPrompt = "";
+    let userPrompt = "";
+
+    switch (analysisType) {
+      case "summarize":
+        systemPrompt = `You are an expert document analyst specializing in creating comprehensive summaries. Your task is to analyze the provided document and create a clear, well-structured summary that captures all essential information.
 
 SUMMARIZATION GUIDELINES:
 1. Identify and extract the main themes and key points
@@ -60,12 +134,12 @@ SUMMARIZATION GUIDELINES:
 7. Organize information hierarchically (main points, sub-points)
 
 Format your response with clear sections and bullet points where appropriate. Aim for 20-30% of the original length while retaining all critical information.`;
-          
-          userPrompt = `Please analyze and summarize the following document:\n\n${prompt}`;
-          break;
+        
+        userPrompt = `Please analyze and summarize the following document:\n\n${prompt}`;
+        break;
 
-        case "extract-keywords":
-          systemPrompt = `You are an expert in content analysis and keyword extraction. Your task is to analyze the provided document and extract the most important keywords, phrases, and concepts.
+      case "extract-keywords":
+        systemPrompt = `You are an expert in content analysis and keyword extraction. Your task is to analyze the provided document and extract the most important keywords, phrases, and concepts.
 
 KEYWORD EXTRACTION GUIDELINES:
 1. Identify key terms, concepts, and phrases
@@ -83,12 +157,12 @@ Organize your response into categories:
 - Technical Terms (specialized vocabulary)
 - Key Phrases (important multi-word expressions)`;
 
-          userPrompt = `Please extract and categorize keywords from the following document:\n\n${prompt}`;
-          break;
+        userPrompt = `Please extract and categorize keywords from the following document:\n\n${prompt}`;
+        break;
 
-        case "q-and-a":
-          const question = options?.question || "What are the main points of this document?";
-          systemPrompt = `You are an expert document analyst with deep comprehension abilities. Your task is to carefully read and understand the provided document, then answer the specific question based solely on the information contained within the document.
+      case "q-and-a":
+        const question = options?.question || "What are the main points of this document?";
+        systemPrompt = `You are an expert document analyst with deep comprehension abilities. Your task is to carefully read and understand the provided document, then answer the specific question based solely on the information contained within the document.
 
 QUESTION ANSWERING GUIDELINES:
 1. Read and comprehend the entire document thoroughly
@@ -101,42 +175,43 @@ QUESTION ANSWERING GUIDELINES:
 
 Be accurate, thorough, and cite specific parts of the document when relevant.`;
 
-          userPrompt = `Based on the following document, please answer this question: "${question}"\n\nDocument:\n${prompt}`;
-          break;
+        userPrompt = `Based on the following document, please answer this question: "${question}"\n\nDocument:\n${prompt}`;
+        break;
 
-        default:
-          systemPrompt = "You are a helpful document analyst. Please analyze the provided document.";
-          userPrompt = prompt;
-      }
-
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: userPrompt
-          }
-        ],
-        model: "llama-3.1-8b-instant",
-        temperature: analysisType === "extract-keywords" ? 0.3 : 0.7,
-        max_tokens: 2000,
-      });
-
-      const processedText = completion.choices[0]?.message?.content?.trim() || prompt;
-
-      return {
-        text: prompt,
-        processedText
-      };
+      default:
+        systemPrompt = "You are a helpful document analyst. Please analyze the provided document.";
+        userPrompt = prompt;
     }
 
-    if (mode === "enhance") {
-      const toneStyle = options?.toneStyle || "formal";
-      
-      const systemPrompt = `You are an expert prompt engineer with deep knowledge of AI systems and prompt optimization. Your task is to transform basic prompts into highly effective, detailed instructions that will produce superior AI responses.
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: userPrompt
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: analysisType === "extract-keywords" ? 0.3 : 0.7,
+      max_tokens: 2000,
+      stream: false, // Disable streaming for better performance
+    });
+
+    const processedText = completion.choices[0]?.message?.content?.trim() || prompt;
+
+    return {
+      text: prompt,
+      processedText
+    };
+  }
+
+  if (mode === "enhance") {
+    const toneStyle = options?.toneStyle || "formal";
+    
+    const systemPrompt = `You are an expert prompt engineer with deep knowledge of AI systems and prompt optimization. Your task is to transform basic prompts into highly effective, detailed instructions that will produce superior AI responses.
 
 ENHANCEMENT PRINCIPLES:
 1. Add specific context and background information
@@ -159,32 +234,33 @@ Transform the user's basic prompt into a comprehensive, well-structured instruct
 
 Return ONLY the enhanced prompt, no explanations or meta-commentary.`;
 
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: `Transform this basic prompt into a highly effective, detailed instruction with ${toneStyle} tone: "${prompt}"`
-          }
-        ],
-        model: "llama-3.1-8b-instant",
-        temperature: 0.7,
-        max_tokens: 1500,
-      });
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: `Transform this basic prompt into a highly effective, detailed instruction with ${toneStyle} tone: "${prompt}"`
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.7,
+      max_tokens: 1500,
+      stream: false,
+    });
 
-      const enhancedPrompt = completion.choices[0]?.message?.content?.trim() || prompt;
+    const enhancedPrompt = completion.choices[0]?.message?.content?.trim() || prompt;
 
-      return {
-        text: prompt,
-        enhancedPrompt
-      };
-    } 
-    
-    else if (mode === "analyze") {
-      const systemPrompt = `You are an expert prompt analyst with extensive experience in AI prompt optimization. Analyze the given prompt comprehensively and provide detailed feedback.
+    return {
+      text: prompt,
+      enhancedPrompt
+    };
+  } 
+  
+  else if (mode === "analyze") {
+    const systemPrompt = `You are an expert prompt analyst with extensive experience in AI prompt optimization. Analyze the given prompt comprehensively and provide detailed feedback.
 
 ANALYSIS CRITERIA:
 - Clarity: How clear and unambiguous is the prompt?
@@ -210,44 +286,45 @@ Provide your analysis in this exact JSON format:
   "suggestions": ["suggestion1", "suggestion2", "suggestion3", "suggestion4"]
 }`;
 
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: `Analyze this prompt comprehensively: "${prompt}"`
-          }
-        ],
-        model: "llama-3.1-8b-instant",
-        temperature: 0.3,
-        max_tokens: 1000,
-      });
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: `Analyze this prompt comprehensively: "${prompt}"`
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: 0.3,
+      max_tokens: 1000,
+      stream: false,
+    });
 
-      const responseText = completion.choices[0]?.message?.content?.trim() || '';
-      
-      try {
-        const analysis = JSON.parse(responseText);
-        return {
-          text: prompt,
-          analysis
-        };
-      } catch (parseError) {
-        console.error("Failed to parse analysis JSON:", parseError);
-        return getEnhancedFallbackResponse(prompt, mode, options);
-      }
+    const responseText = completion.choices[0]?.message?.content?.trim() || '';
+    
+    try {
+      const analysis = JSON.parse(responseText);
+      return {
+        text: prompt,
+        analysis
+      };
+    } catch (parseError) {
+      console.error("Failed to parse analysis JSON:", parseError);
+      return getEnhancedFallbackResponse(prompt, mode, options);
     }
+  }
 
-    else if (mode === "handwriting") {
-      const actionType = options?.actionType || "continue";
-      
-      let systemPrompt = "";
-      
-      switch (actionType) {
-        case "continue":
-          systemPrompt = `You are an expert writing assistant. Your task is to continue the given text naturally, maintaining the same tone, style, and voice as the original author.
+  else if (mode === "handwriting") {
+    const actionType = options?.actionType || "continue";
+    
+    let systemPrompt = "";
+    
+    switch (actionType) {
+      case "continue":
+        systemPrompt = `You are an expert writing assistant. Your task is to continue the given text naturally, maintaining the same tone, style, and voice as the original author.
 
 CONTINUATION GUIDELINES:
 1. Analyze the writing style, tone, and voice of the original text
@@ -259,10 +336,10 @@ CONTINUATION GUIDELINES:
 7. Aim for 2-3 times the length of the original text
 
 Return ONLY the continuation text, starting where the original text left off. Do not include the original text or any explanations.`;
-          break;
-          
-        case "grammar":
-          systemPrompt = `You are an expert editor and proofreader. Your task is to fix grammar, spelling, punctuation, and improve sentence structure while preserving the original meaning and voice.
+        break;
+        
+      case "grammar":
+        systemPrompt = `You are an expert editor and proofreader. Your task is to fix grammar, spelling, punctuation, and improve sentence structure while preserving the original meaning and voice.
 
 EDITING GUIDELINES:
 1. Correct all grammatical errors and typos
@@ -274,10 +351,10 @@ EDITING GUIDELINES:
 7. Ensure consistency in tense and voice
 
 Return ONLY the corrected and improved text. Do not add explanations or comments.`;
-          break;
-          
-        case "shorten":
-          systemPrompt = `You are an expert editor specializing in concise writing. Your task is to shorten the given text while preserving all essential information and maintaining clarity.
+        break;
+        
+      case "shorten":
+        systemPrompt = `You are an expert editor specializing in concise writing. Your task is to shorten the given text while preserving all essential information and maintaining clarity.
 
 SHORTENING GUIDELINES:
 1. Remove redundant words and phrases
@@ -289,10 +366,10 @@ SHORTENING GUIDELINES:
 7. Aim for 40-60% of the original length
 
 Return ONLY the shortened text. Do not add explanations or comments.`;
-          break;
-          
-        case "summarize":
-          systemPrompt = `You are an expert at creating clear, comprehensive summaries. Your task is to distill the given text into its most important points and key information.
+        break;
+        
+      case "summarize":
+        systemPrompt = `You are an expert at creating clear, comprehensive summaries. Your task is to distill the given text into its most important points and key information.
 
 SUMMARIZATION GUIDELINES:
 1. Identify and include all main points
@@ -304,39 +381,35 @@ SUMMARIZATION GUIDELINES:
 7. Aim for 20-30% of the original length
 
 Return ONLY the summary. Do not add explanations or comments.`;
-          break;
-      }
-
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        model: "llama-3.1-8b-instant",
-        temperature: actionType === "grammar" ? 0.3 : 0.7,
-        max_tokens: actionType === "continue" ? 2000 : 1500,
-      });
-
-      const processedText = completion.choices[0]?.message?.content?.trim() || prompt;
-
-      return {
-        text: prompt,
-        processedText
-      };
+        break;
     }
 
-    return getEnhancedFallbackResponse(prompt, mode, options);
-    
-  } catch (error) {
-    console.error("Groq API error:", error);
-    return getEnhancedFallbackResponse(prompt, mode, options);
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      model: "llama-3.1-8b-instant",
+      temperature: actionType === "grammar" ? 0.3 : 0.7,
+      max_tokens: actionType === "continue" ? 2000 : 1500,
+      stream: false,
+    });
+
+    const processedText = completion.choices[0]?.message?.content?.trim() || prompt;
+
+    return {
+      text: prompt,
+      processedText
+    };
   }
+
+  return getEnhancedFallbackResponse(prompt, mode, options);
 }
 
 // Enhanced fallback responses that provide much better examples

@@ -73,6 +73,10 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Optimize rendering performance */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -80,29 +84,31 @@
   font-family: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Performance optimized glow effects */
 .glow-effect {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
-/* Enhanced blue glow effect */
+/* Optimized blue glow effect with GPU acceleration */
 .blue-glow-top {
   position: relative;
+  will-change: transform; /* Optimize for animations */
 }
 
 .blue-glow-top::before {
   content: "";
   position: absolute;
-  top: -50px; /* Start above the viewport */
+  top: -50px;
   left: 0;
   right: 0;
-  height: 350px; /* Increased height for more prominent glow */
-  background: radial-gradient(ellipse at top, rgba(59, 130, 246, 0.8), transparent 70%); /* Increased opacity from 0.25 to 0.8 */
+  height: 350px;
+  background: radial-gradient(ellipse at top, rgba(59, 130, 246, 0.6), transparent 70%);
   pointer-events: none;
   z-index: 1;
   animation: pulse-glow 6s ease-in-out infinite;
+  transform: translateZ(0); /* Force GPU acceleration */
 }
 
-/* Add a second glow layer for more intensity */
 .blue-glow-top::after {
   content: "";
   position: absolute;
@@ -110,15 +116,16 @@
   left: 0;
   right: 0;
   height: 250px;
-  background: radial-gradient(ellipse at top, rgba(37, 99, 235, 0.6), transparent 80%);
+  background: radial-gradient(ellipse at top, rgba(37, 99, 235, 0.4), transparent 80%);
   pointer-events: none;
   z-index: 0;
   animation: pulse-glow-alt 8s ease-in-out infinite;
+  transform: translateZ(0); /* Force GPU acceleration */
 }
 
-/* Pulse glow animation */
+/* Optimized pulse animations */
 @keyframes pulse-glow {
-  0% {
+  0%, 100% {
     opacity: 0.7;
     filter: blur(15px);
   }
@@ -126,15 +133,10 @@
     opacity: 1;
     filter: blur(10px);
   }
-  100% {
-    opacity: 0.7;
-    filter: blur(15px);
-  }
 }
 
-/* Alternate pulse glow animation */
 @keyframes pulse-glow-alt {
-  0% {
+  0%, 100% {
     opacity: 0.6;
     filter: blur(20px);
   }
@@ -142,16 +144,13 @@
     opacity: 0.9;
     filter: blur(15px);
   }
-  100% {
-    opacity: 0.6;
-    filter: blur(20px);
-  }
 }
 
-/* Glowing button effect */
+/* Optimized button glow */
 .glow-button {
   position: relative;
   overflow: hidden;
+  transform: translateZ(0); /* GPU acceleration */
 }
 
 .glow-button::before {
@@ -161,33 +160,34 @@
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: rgba(59, 130, 246, 0.4); /* Increased opacity from 0.15 to 0.4 */
+  background: rgba(59, 130, 246, 0.3);
   border-radius: 50%;
   z-index: -1;
   animation: pulse-button 2s ease-in-out infinite;
+  transform: translateZ(0);
 }
 
 @keyframes pulse-button {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 0.7;
-    transform: scale(0.98);
+    transform: scale(0.98) translateZ(0);
   }
   50% {
     opacity: 1;
-    transform: scale(1.05);
+    transform: scale(1.05) translateZ(0);
   }
 }
 
-/* Fixed sidebar styles with blue glow */
+/* Optimized sidebar with hardware acceleration */
 .sidebar {
   @apply w-16 flex flex-col items-center py-4 relative z-10;
   background-color: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); /* Added blue glow to sidebar */
-  border-right: 1px solid rgba(59, 130, 246, 0.1); /* Changed to blue tinted border */
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  border-right: 1px solid rgba(59, 130, 246, 0.1);
   position: relative;
+  transform: translateZ(0); /* GPU acceleration */
 }
 
 .sidebar::before {
@@ -197,8 +197,9 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.15), transparent 50%); /* Increased opacity from 0.04 to 0.15 */
+  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.1), transparent 50%);
   pointer-events: none;
+  transform: translateZ(0);
 }
 
 .sidebar::after {
@@ -208,26 +209,30 @@
   right: -1px;
   bottom: 0;
   width: 1px;
-  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.3), transparent 80%); /* Increased opacity from 0.03 to 0.3 */
+  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.2), transparent 80%);
   pointer-events: none;
+  transform: translateZ(0);
 }
 
-/* Update sidebar icon styles with blue glow */
+/* Optimized sidebar icons */
 .sidebar-icon {
   @apply w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100/10 transition-all duration-200 cursor-pointer;
+  transform: translateZ(0); /* GPU acceleration */
 }
 
 .sidebar-icon:hover {
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); /* Added blue glow on hover */
-  color: rgba(59, 130, 246, 0.9); /* Changed text color on hover */
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+  color: rgba(59, 130, 246, 0.9);
+  transform: translateY(-1px) translateZ(0);
 }
 
 .sidebar-icon.active {
-  @apply bg-blue-600 text-white; /* Changed from black to blue */
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); /* Increased glow from 0.2 to 0.5 */
+  @apply bg-blue-600 text-white;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  transform: translateZ(0);
 }
 
-/* Fix for tooltip positioning in the sidebar to prevent overlapping */
+/* Optimized tooltip positioning */
 .sidebar .tooltip-wrapper {
   position: relative;
   margin-bottom: 1rem;
@@ -236,54 +241,59 @@
   justify-content: center;
 }
 
-/* Ensure tooltips don't overlap with elements below them */
 .sidebar-tooltip {
   position: absolute;
   left: calc(100% + 0.5rem);
   z-index: 50;
   white-space: nowrap;
+  transform: translateZ(0);
 }
 
+/* Optimized card hover effects */
 .card-hover:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) translateZ(0);
   transition: all 0.2s ease-in-out;
-  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.15); /* Added blue glow on hover */
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.15);
 }
 
 .agent-card {
   @apply border border-gray-100 rounded-lg p-4 flex hover:shadow-md transition-all duration-200 card-hover bg-white;
+  transform: translateZ(0); /* GPU acceleration */
 }
 
 .agent-card:hover {
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25); /* Increased shadow from 0.08 to 0.25 */
-  border-color: rgba(59, 130, 246, 0.2); /* Increased border opacity from 0.1 to 0.2 */
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px) translateZ(0);
 }
 
 .agent-icon {
   @apply w-8 h-8 rounded-md flex items-center justify-center mr-3;
 }
 
+/* Optimized input glow */
 .input-glow:focus {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); /* Increased glow from 0.15 to 0.3 and changed to blue */
-  border-color: rgba(59, 130, 246, 0.5); /* Increased border opacity from 0.3 to 0.5 */
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: translateZ(0);
 }
 
-/* Search input styles removed as we no longer need them */
-
+/* Optimized chat input */
 .chat-input {
-  @apply w-full pl-4 pr-24 py-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-300 input-glow; /* Changed ring color to blue */
+  @apply w-full pl-4 pr-24 py-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-300 input-glow;
   background-color: rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(59, 130, 246, 0.2); /* Changed to blue tinted border */
+  border: 1px solid rgba(59, 130, 246, 0.2);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
+  transform: translateZ(0);
 }
 
 .chat-input:focus {
-  box-shadow: 0 0 25px rgba(59, 130, 246, 0.35); /* Increased glow from 0.2 to 0.35 */
-  border-color: rgba(59, 130, 246, 0.5); /* Increased border opacity from 0.3 to 0.5 */
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.35);
+  border-color: rgba(59, 130, 246, 0.5);
 }
 
-/* Chat input buttons container */
+/* Optimized chat input buttons */
 .chat-input-buttons {
   position: absolute;
   right: 0;
@@ -295,12 +305,12 @@
   gap: 8px;
 }
 
-/* Chat input button */
 .chat-input-button {
   @apply rounded-full h-9 w-9 flex items-center justify-center hover:bg-gray-100/50 transition-smooth;
+  transform: translateZ(0);
 }
 
-/* Footer agents dropdown */
+/* Optimized dropdowns */
 .footer-agents-dropdown {
   position: absolute;
   bottom: calc(100% + 10px);
@@ -312,25 +322,27 @@
   z-index: 30;
   border: 1px solid rgba(59, 130, 246, 0.1);
   animation: fadeIn 0.2s ease-out;
+  transform: translateZ(0);
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(10px) translateZ(0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) translateZ(0);
   }
 }
 
-/* Smooth transitions */
+/* Optimized transitions */
 .transition-smooth {
   @apply transition-all duration-300 ease-in-out;
+  transform: translateZ(0); /* GPU acceleration */
 }
 
-/* Modern scrollbar */
+/* Optimized scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -341,17 +353,15 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.3); /* Changed to blue */
+  background: rgba(59, 130, 246, 0.3);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.5); /* Changed to blue */
+  background: rgba(59, 130, 246, 0.5);
 }
 
-/* Fixed header and footer */
-/* Header removed */
-
+/* Optimized footer */
 .footer {
   @apply p-4 z-10 relative;
   background-color: rgba(255, 255, 255, 0);
@@ -359,79 +369,89 @@
   -webkit-backdrop-filter: none;
   border-top: none;
   box-shadow: none;
+  transform: translateZ(0);
 }
 
-/* Info icon with enhanced blue glow */
+/* Optimized info icon */
 .info-icon {
   @apply w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center mb-4;
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5); /* Increased glow from 0.2 to 0.5 */
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
   animation: pulse-glow 4s ease-in-out infinite;
+  transform: translateZ(0);
 }
 
-/* Content area - adjusted for no header */
+/* Optimized content area */
 .content-area {
   @apply flex-1 overflow-auto p-6 pt-8 relative z-0;
   background-color: transparent;
+  transform: translateZ(0);
 }
 
-/* App container with enhanced blue gradients */
+/* Optimized app container */
 .app-container {
   @apply flex h-screen;
   background-color: #f8f9fa;
-  background-image: radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.15) 0%, transparent 60%), /* Increased opacity from 0.04 to 0.15 */
-    radial-gradient(circle at 20% 90%, rgba(37, 99, 235, 0.12) 0%, transparent 55%); /* Increased opacity from 0.04 to 0.12 */
+  background-image: radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 20% 90%, rgba(37, 99, 235, 0.1) 0%, transparent 55%);
+  transform: translateZ(0);
 }
 
-/* Chat message styles */
+/* Optimized chat container */
 .chat-container {
   @apply flex flex-col gap-6 max-w-4xl mx-auto;
+  transform: translateZ(0);
 }
 
 .message {
   @apply flex gap-4 max-w-4xl;
+  transform: translateZ(0);
 }
 
 .message-user {
   @apply justify-end;
 }
 
-/* Add a blue glow to AI messages */
+/* Optimized message styling */
 .message-ai .message-content {
   @apply bg-white text-gray-800;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0 15px rgba(59, 130, 246, 0.15); /* Increased glow from 0.05 to 0.15 */
-  border: 1px solid rgba(59, 130, 246, 0.1); /* Increased border opacity from 0.03 to 0.1 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0 15px rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  transform: translateZ(0);
 }
 
-/* Add a more prominent blue glow to user messages */
 .message-user .message-content {
   @apply bg-blue-600 text-white;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.35); /* Increased glow from 0.15 to 0.35 */
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.35);
+  transform: translateZ(0);
 }
 
 .message-content {
   @apply px-4 py-3 rounded-lg max-w-[80%];
+  transform: translateZ(0);
 }
 
 .message-avatar {
   @apply w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0;
+  transform: translateZ(0);
 }
 
 .message-ai .message-avatar {
   @apply bg-indigo-100;
-  box-shadow: 0 0 15px rgba(79, 70, 229, 0.25); /* Changed to indigo glow */
+  box-shadow: 0 0 15px rgba(79, 70, 229, 0.25);
 }
 
 .message-user .message-avatar {
   @apply bg-blue-100;
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25); /* Increased glow from 0.1 to 0.25 */
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
 }
 
-/* Empty chat state */
+/* Optimized empty chat state */
 .empty-chat {
   @apply flex flex-col items-center justify-center text-center h-full;
+  transform: translateZ(0);
 }
 
-/* Chat history list - Fixed by using direct CSS properties instead of @apply */
+/* Optimized chat history */
 .chat-history-list {
   display: flex;
   flex-direction: column;
@@ -439,76 +459,84 @@
   padding: 1rem;
   max-height: 80vh;
   overflow: auto;
+  transform: translateZ(0);
 }
 
 .chat-history-item {
   @apply flex items-center gap-3 p-2 rounded-md hover:bg-gray-100/20 cursor-pointer transition-all;
+  transform: translateZ(0);
 }
 
 .chat-history-item.active {
-  @apply bg-blue-50/30; /* Changed from gray to blue tint */
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25); /* Increased glow from 0.1 to 0.25 */
-  border: 1px solid rgba(59, 130, 246, 0.15); /* Added blue border */
+  @apply bg-blue-50/30;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(59, 130, 246, 0.15);
 }
 
-/* Sidebar dropdown - Fixed by using direct CSS properties instead of @apply */
+/* Optimized sidebar dropdown */
 .sidebar-dropdown {
   position: absolute;
   left: 100%;
   margin-left: 0.5rem;
   background-color: white;
   border-radius: 0.375rem;
-  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15); /* Added blue tint to shadow */
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
   padding: 0.5rem;
   min-width: 200px;
   z-index: 20;
-  border: 1px solid rgba(59, 130, 246, 0.1); /* Changed to blue tinted border */
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  transform: translateZ(0);
 }
 
 .sidebar-dropdown-item {
-  @apply flex items-center gap-2 p-2 rounded-md hover:bg-blue-50/50 cursor-pointer transition-all text-sm; /* Changed hover to blue tint */
+  @apply flex items-center gap-2 p-2 rounded-md hover:bg-blue-50/50 cursor-pointer transition-all text-sm;
+  transform: translateZ(0);
 }
 
-/* AI Agent selector */
+/* Optimized AI Agent selector */
 .agent-selector {
   @apply p-4 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-100/50;
+  transform: translateZ(0);
 }
 
 .agent-option {
-  @apply flex items-center gap-3 p-3 rounded-md hover:bg-blue-50/40 cursor-pointer transition-all; /* Changed hover to blue tint */
+  @apply flex items-center gap-3 p-3 rounded-md hover:bg-blue-50/40 cursor-pointer transition-all;
+  transform: translateZ(0);
 }
 
 .agent-option.active {
-  @apply bg-blue-50/60; /* Increased opacity from 0.5 to 0.6 */
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.25); /* Increased glow from 0.1 to 0.25 */
-  border: 1px solid rgba(59, 130, 246, 0.3); /* Increased border opacity from 0.2 to 0.3 */
+  @apply bg-blue-50/60;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-/* Prompt history */
+/* Optimized prompt history */
 .prompt-history {
   @apply flex flex-col gap-2;
+  transform: translateZ(0);
 }
 
 .prompt-item {
-  @apply p-3 border border-gray-100/50 rounded-md hover:border-blue-300/60 cursor-pointer transition-all; /* Increased border opacity */
+  @apply p-3 border border-gray-100/50 rounded-md hover:border-blue-300/60 cursor-pointer transition-all;
+  transform: translateZ(0);
 }
 
 .prompt-item:hover {
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); /* Added blue glow on hover */
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px) translateZ(0);
 }
 
-/* Add a subtle animation to the typing indicator */
+/* Optimized typing indicator */
 @keyframes typing-glow {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 0.5;
-    transform: scale(0.85);
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3); /* Added blue glow */
+    transform: scale(0.85) translateZ(0);
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
   }
   50% {
     opacity: 1;
-    transform: scale(1);
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); /* Added blue glow */
+    transform: scale(1) translateZ(0);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
   }
 }
 
@@ -524,20 +552,22 @@
   animation-delay: 0.4s;
 }
 
-/* Add blue glow to buttons on hover */
+/* Optimized button hover effects */
 button:hover {
   box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+  transform: translateY(-1px) translateZ(0);
 }
 
-/* Make sure whitespace is preserved in messages */
+/* Optimized whitespace preservation */
 .whitespace-pre-wrap {
   white-space: pre-wrap;
-  display: block; /* Add display block to ensure proper rendering */
+  display: block;
 }
 
-/* Enhanced Prompt Display Styles */
+/* Enhanced Prompt Display Styles - Optimized */
 .enhanced-prompt-display {
   @apply my-3;
+  transform: translateZ(0);
 }
 
 .enhanced-prompt-display .bg-indigo-50 {
@@ -545,18 +575,20 @@ button:hover {
   border: 1px solid rgba(99, 102, 241, 0.2);
   box-shadow: 0 2px 10px rgba(99, 102, 241, 0.1);
   transition: all 0.2s ease-in-out;
+  transform: translateZ(0);
 }
 
 .enhanced-prompt-display .bg-indigo-50:hover {
   box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
 }
 
-/* Enhanced Score Display Widget */
+/* Enhanced Score Display Widget - Optimized */
 .score-display-container {
   @apply my-4 p-4 rounded-lg bg-white/80 backdrop-blur-md border animate-fadeIn;
   border-color: rgba(59, 130, 246, 0.2);
   box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+  transform: translateZ(0);
 }
 
 .score-header {
@@ -578,6 +610,7 @@ button:hover {
   background: conic-gradient(currentColor var(--progress), #e2e8f0 0);
   --progress: 0%;
   transition: all 0.5s ease-out;
+  transform: translateZ(0);
 }
 
 .score-circle::before {
@@ -627,14 +660,15 @@ button:hover {
   @apply h-full rounded-full transition-all duration-1000 ease-out;
   animation: grow-bar 1s ease-out forwards;
   transform-origin: left;
+  transform: translateZ(0);
 }
 
 @keyframes grow-bar {
   0% {
-    transform: scaleX(0);
+    transform: scaleX(0) translateZ(0);
   }
   100% {
-    transform: scaleX(1);
+    transform: scaleX(1) translateZ(0);
   }
 }
 
@@ -664,19 +698,20 @@ button:hover {
   top: 0;
 }
 
-/* Analysis badges */
+/* Optimized analysis badges */
 .analysis-badge-container {
   @apply flex items-center gap-2 my-2 animate-fadeIn;
-  transform: translateX(0);
+  transform: translateX(0) translateZ(0);
   transition: transform 0.2s ease-out;
 }
 
 .analysis-badge-container:hover {
-  transform: translateX(5px);
+  transform: translateX(5px) translateZ(0);
 }
 
 .analysis-badge-icon {
   @apply w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0;
+  transform: translateZ(0);
 }
 
 .analysis-badge-container.strength .analysis-badge-icon {
@@ -696,6 +731,7 @@ button:hover {
 
 .analysis-badge {
   @apply inline-block px-3 py-1.5 rounded-full text-sm font-medium;
+  transform: translateZ(0);
 }
 
 .strength-badge {
@@ -713,11 +749,11 @@ button:hover {
 @keyframes animate-fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(10px) translateZ(0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) translateZ(0);
   }
 }
 
@@ -725,10 +761,11 @@ button:hover {
   animation: animate-fadeIn 0.5s ease-out forwards;
 }
 
-/* Analysis section headers */
+/* Optimized analysis section headers */
 .analysis-section-header {
   @apply flex items-center gap-3 mt-6 mb-3 pb-2 border-b animate-fadeIn;
   border-color: rgba(59, 130, 246, 0.1);
+  transform: translateZ(0);
 }
 
 .analysis-section-header h3 {
@@ -737,6 +774,7 @@ button:hover {
 
 .analysis-section-header .section-icon {
   @apply w-5 h-5 rounded-md flex-shrink-0;
+  transform: translateZ(0);
 }
 
 .analysis-section-header.strengths h3 {
@@ -764,4 +802,38 @@ button:hover {
 .analysis-section-header.suggestions .section-icon {
   @apply bg-blue-500;
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+/* Performance optimizations for mobile */
+@media (max-width: 768px) {
+  .blue-glow-top::before,
+  .blue-glow-top::after {
+    display: none; /* Disable heavy effects on mobile */
+  }
+  
+  .sidebar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  
+  .chat-input {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .blue-glow-top::before,
+  .blue-glow-top::after {
+    animation: none;
+  }
 }
