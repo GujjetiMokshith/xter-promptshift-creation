@@ -23,12 +23,33 @@ import {
   FileText,
   BookOpen,
   Palette,
-  Home,
+  History,
+  Trash2,
+  Edit3,
+  MoreVertical,
   Search,
+  Filter,
+  Calendar,
+  Star,
+  Archive,
+  Download,
+  Share2,
+  Moon,
+  Sun,
+  HelpCircle,
+  LogOut,
+  UserCircle,
+  Crown,
+  Zap,
+  TrendingUp,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { analyzePrompt, enhancePrompt, processHandwriting, analyzeDocument } from "@/lib/groq-service"
 import { useRouter } from "next/navigation"
@@ -51,6 +72,8 @@ interface Chat {
   messages: Message[]
   createdAt: Date
   agentId: string
+  starred?: boolean
+  archived?: boolean
 }
 
 interface Agent {
@@ -59,6 +82,8 @@ interface Agent {
   icon: React.ReactNode
   description: string
   color: string
+  category: "core" | "writing" | "analysis"
+  premium?: boolean
 }
 
 interface PromptHistory {
@@ -79,10 +104,13 @@ export default function Home() {
   const [chats, setChats] = useState<Chat[]>([])
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
 
-  // State for sidebar functionality
+  // Enhanced sidebar state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showChatHistory, setShowChatHistory] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [chatSearchQuery, setChatSearchQuery] = useState("")
+  const [chatFilter, setChatFilter] = useState<"all" | "starred" | "archived">("all")
+  const [darkMode, setDarkMode] = useState(false)
 
   // State for footer dropdowns
   const [showFooterAgents, setShowFooterAgents] = useState(false)
@@ -101,6 +129,7 @@ export default function Home() {
     icon: <Wand2 size={14} className="text-white" />,
     description: "Automatically rewrites prompts to be more detailed, creative, or direct.",
     color: "bg-indigo-500",
+    category: "core",
   })
 
   // State for prompt history
@@ -112,35 +141,42 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Memoized AI agents to prevent unnecessary re-renders
+  // Enhanced AI agents with categories
   const agents: Agent[] = useMemo(() => [
+    // Core AI Tools
     {
       id: "enhancer",
       name: "Prompt Enhancer",
       icon: <Wand2 size={14} className="text-white" />,
-      description: "Automatically rewrites prompts to be more detailed, creative, or direct.",
+      description: "Transform basic prompts into detailed, effective instructions",
       color: "bg-indigo-500",
+      category: "core",
     },
     {
       id: "analyzer",
       name: "Prompt Analyzer",
       icon: <LineChart size={14} className="text-white" />,
-      description: "Rates prompt quality based on clarity, specificity, and effectiveness.",
+      description: "Rate and analyze prompt quality with detailed feedback",
       color: "bg-amber-500",
+      category: "analysis",
     },
+    // Writing Tools
     {
       id: "handwriting",
-      name: "Handwriting Assistant",
+      name: "Writing Assistant",
       icon: <PenTool size={14} className="text-white" />,
-      description: "Continue writing, fix grammar, shorten text, or create summaries.",
+      description: "Continue writing, fix grammar, and improve text",
       color: "bg-green-500",
+      category: "writing",
     },
     {
       id: "document-analyzer",
       name: "Document Analyzer",
       icon: <FileText size={14} className="text-white" />,
-      description: "Upload and analyze documents with AI-powered insights and summaries.",
+      description: "Analyze documents with AI-powered insights",
       color: "bg-orange-500",
+      category: "analysis",
+      premium: true,
     },
   ], [])
 
@@ -180,6 +216,32 @@ export default function Home() {
     }
   ], [])
 
+  // Filter chats based on search and filter
+  const filteredChats = useMemo(() => {
+    let filtered = chats;
+    
+    // Apply filter
+    if (chatFilter === "starred") {
+      filtered = filtered.filter(chat => chat.starred);
+    } else if (chatFilter === "archived") {
+      filtered = filtered.filter(chat => chat.archived);
+    } else {
+      filtered = filtered.filter(chat => !chat.archived);
+    }
+    
+    // Apply search
+    if (chatSearchQuery.trim()) {
+      filtered = filtered.filter(chat => 
+        chat.title.toLowerCase().includes(chatSearchQuery.toLowerCase()) ||
+        chat.messages.some(msg => 
+          msg.content.toLowerCase().includes(chatSearchQuery.toLowerCase())
+        )
+      );
+    }
+    
+    return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [chats, chatSearchQuery, chatFilter]);
+
   // Optimized auto-scroll with debouncing
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -208,6 +270,8 @@ export default function Home() {
   useEffect(() => {
     try {
       const savedChats = localStorage.getItem("typingmind-chats")
+      const savedSettings = localStorage.getItem("typingmind-settings")
+      
       if (savedChats) {
         const parsedChats = JSON.parse(savedChats)
         setChats(parsedChats)
@@ -220,11 +284,31 @@ export default function Home() {
           setMessages(mostRecentChat.messages)
         }
       }
+      
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings)
+        setSidebarCollapsed(settings.sidebarCollapsed || false)
+        setDarkMode(settings.darkMode || false)
+      }
     } catch (error) {
-      console.error("Error loading saved chats:", error)
-      localStorage.removeItem("typingmind-chats") // Clear corrupted data
+      console.error("Error loading saved data:", error)
+      localStorage.removeItem("typingmind-chats")
+      localStorage.removeItem("typingmind-settings")
     }
   }, [])
+
+  // Save settings to localStorage
+  useEffect(() => {
+    const settings = {
+      sidebarCollapsed,
+      darkMode,
+    }
+    try {
+      localStorage.setItem("typingmind-settings", JSON.stringify(settings))
+    } catch (error) {
+      console.error("Error saving settings:", error)
+    }
+  }, [sidebarCollapsed, darkMode])
 
   // Debounced save to localStorage
   useEffect(() => {
@@ -260,6 +344,9 @@ export default function Home() {
       }
       if (!target.closest(".handwriting-tools-dropdown") && !target.closest(".handwriting-tools-button")) {
         setShowHandwritingTools(false)
+      }
+      if (!target.closest(".profile-menu") && !target.closest(".profile-button")) {
+        setShowProfileMenu(false)
       }
     }
 
@@ -415,6 +502,31 @@ export default function Home() {
     }
   }, [chats])
 
+  const toggleChatStar = useCallback((chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setChats(prev => prev.map(chat => 
+      chat.id === chatId ? { ...chat, starred: !chat.starred } : chat
+    ))
+  }, [])
+
+  const archiveChat = useCallback((chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setChats(prev => prev.map(chat => 
+      chat.id === chatId ? { ...chat, archived: !chat.archived } : chat
+    ))
+  }, [])
+
+  const deleteChat = useCallback((chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm("Are you sure you want to delete this chat?")) {
+      setChats(prev => prev.filter(chat => chat.id !== chatId))
+      if (currentChatId === chatId) {
+        setCurrentChatId(null)
+        setMessages([])
+      }
+    }
+  }, [currentChatId])
+
   const selectAgent = useCallback((agent: Agent) => {
     if (agent) {
       setCurrentAgent(agent)
@@ -483,48 +595,53 @@ export default function Home() {
     setMessages([])
   }, [])
 
-  // Filter chats based on search query
-  const filteredChats = useMemo(() => {
-    if (!chatSearchQuery.trim()) return chats
-    return chats.filter(chat => 
-      chat.title.toLowerCase().includes(chatSearchQuery.toLowerCase()) ||
-      chat.messages.some(msg => 
-        msg.content.toLowerCase().includes(chatSearchQuery.toLowerCase())
-      )
-    )
-  }, [chats, chatSearchQuery])
+  const formatChatDate = (date: Date) => {
+    const now = new Date()
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    } else if (diffInHours < 168) { // 7 days
+      return date.toLocaleDateString([], { weekday: 'short' })
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+    }
+  }
 
   // If document analyzer is active, show its component
   if (showDocumentAnalyzer) {
     return (
       <div className="app-container">
         <TooltipProvider delayDuration={300}>
-          <div className="sidebar w-16">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
-                  onClick={backToChat}
-                >
-                  <ArrowRight className="h-5 w-5 rotate-180" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Back to Chat</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <div className="flex flex-col items-center gap-8 mt-2">
+          <div className={`sidebar ${sidebarCollapsed ? 'w-16' : 'w-80'} transition-all duration-300`}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              {!sidebarCollapsed && (
+                <h2 className="font-semibold text-gray-900">Document Analyzer</h2>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="h-8 w-8"
+              >
+                {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </Button>
+            </div>
+            
+            <div className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="sidebar-icon transition-smooth active">
-                    <FileText className="h-5 w-5" />
-                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={backToChat}
+                    className={`${sidebarCollapsed ? 'w-8 h-8 p-0' : 'w-full'} mb-4`}
+                  >
+                    <ArrowRight className="h-4 w-4 rotate-180" />
+                    {!sidebarCollapsed && <span className="ml-2">Back to Chat</span>}
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p>Document Analyzer</p>
+                  <p>Back to Chat</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -612,32 +729,35 @@ export default function Home() {
     return (
       <div className="app-container">
         <TooltipProvider delayDuration={300}>
-          <div className="sidebar w-16">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
-                  onClick={backToChat}
-                >
-                  <ArrowRight className="h-5 w-5 rotate-180" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Back to Chat</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <div className="flex flex-col items-center gap-8 mt-2">
+          <div className={`sidebar ${sidebarCollapsed ? 'w-16' : 'w-80'} transition-all duration-300`}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              {!sidebarCollapsed && (
+                <h2 className="font-semibold text-gray-900">{tool?.name}</h2>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="h-8 w-8"
+              >
+                {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </Button>
+            </div>
+            
+            <div className="p-4">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="sidebar-icon transition-smooth active">
-                    <PenTool className="h-5 w-5" />
-                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={backToChat}
+                    className={`${sidebarCollapsed ? 'w-8 h-8 p-0' : 'w-full'} mb-4`}
+                  >
+                    <ArrowRight className="h-4 w-4 rotate-180" />
+                    {!sidebarCollapsed && <span className="ml-2">Back to Chat</span>}
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p>{tool?.name}</p>
+                  <p>Back to Chat</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -665,149 +785,475 @@ export default function Home() {
   return (
     <div className="app-container">
       <TooltipProvider delayDuration={300}>
-        {/* Clean Modern Sidebar */}
-        <div className="sidebar w-16">
-          {/* New Chat Button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full mb-6 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 mt-4"
-                onClick={createNewChat}
-              >
-                <Plus className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>New Chat</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Core Navigation */}
-          <div className="flex flex-col items-center gap-4 mb-8">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className={`sidebar-icon transition-smooth ${showChatHistory ? "active bg-blue-100 text-blue-600" : "hover:bg-gray-50"}`}
-                  onClick={() => setShowChatHistory(!showChatHistory)}
-                >
-                  <MessageSquare className="h-5 w-5" />
+        {/* Enhanced Sidebar */}
+        <div className={`sidebar ${sidebarCollapsed ? 'w-16' : 'w-80'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col`}>
+          {/* Sidebar Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <Sparkles className="h-4 w-4 text-white" />
                 </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Chat History</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link href="/handwriting">
-                  <div className="sidebar-icon transition-smooth hover:bg-green-50 hover:text-green-600">
-                    <PenTool className="h-5 w-5" />
-                  </div>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Handwriting Tools</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* Bottom Actions */}
-          <div className="mt-auto mb-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="sidebar-icon transition-smooth hover:bg-gray-50">
-                  <Settings className="h-5 w-5" />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Settings</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* User Profile */}
-          <div className="relative">
-            <div
-              className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer shadow-sm"
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
+                <h1 className="font-bold text-gray-900">TypingMind</h1>
+                {hasApiKey && (
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    <Zap className="h-3 w-3 mr-1" />
+                    Pro
+                  </Badge>
+                )}
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="h-8 w-8"
             >
-              <span className="text-sm font-medium text-white">U</span>
-            </div>
+              {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </div>
 
-            {showProfileMenu && (
-              <div className="sidebar-dropdown">
-                <div className="sidebar-dropdown-item">
-                  <User size={16} />
-                  <span>Profile</span>
+          {/* Quick Actions */}
+          <div className="p-4 border-b border-gray-200">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={createNewChat}
+                  className={`${sidebarCollapsed ? 'w-8 h-8 p-0' : 'w-full'} bg-blue-600 hover:bg-blue-700 text-white`}
+                >
+                  <Plus className="h-4 w-4" />
+                  {!sidebarCollapsed && <span className="ml-2">New Chat</span>}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>New Chat</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex-1 overflow-hidden">
+            {!sidebarCollapsed ? (
+              <div className="p-4">
+                {/* Chat History Section */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-gray-700">Recent Chats</h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowChatHistory(!showChatHistory)}
+                      className="h-6 w-6"
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {showChatHistory && (
+                    <div className="space-y-3">
+                      {/* Search and Filter */}
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                            placeholder="Search chats..."
+                            value={chatSearchQuery}
+                            onChange={(e) => setChatSearchQuery(e.target.value)}
+                            className="pl-9 h-8 text-sm"
+                          />
+                        </div>
+                        
+                        <div className="flex gap-1">
+                          {[
+                            { key: "all", label: "All", icon: MessageSquare },
+                            { key: "starred", label: "Starred", icon: Star },
+                            { key: "archived", label: "Archived", icon: Archive },
+                          ].map(({ key, label, icon: Icon }) => (
+                            <Button
+                              key={key}
+                              variant={chatFilter === key ? "default" : "ghost"}
+                              size="sm"
+                              onClick={() => setChatFilter(key as any)}
+                              className="flex-1 h-7 text-xs"
+                            >
+                              <Icon className="h-3 w-3 mr-1" />
+                              {label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Chat List */}
+                      <div className="space-y-1 max-h-64 overflow-y-auto">
+                        {filteredChats.length > 0 ? (
+                          filteredChats.map((chat) => (
+                            <div
+                              key={chat.id}
+                              className={`group relative p-3 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                                currentChatId === chat.id ? "bg-blue-50 border border-blue-200" : "border border-transparent"
+                              }`}
+                              onClick={() => selectChat(chat.id)}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="text-sm font-medium text-gray-900 truncate">
+                                      {chat.title || "New Chat"}
+                                    </h4>
+                                    {chat.starred && <Star className="h-3 w-3 text-yellow-500 fill-current" />}
+                                    {chat.archived && <Archive className="h-3 w-3 text-gray-400" />}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{formatChatDate(new Date(chat.createdAt))}</span>
+                                    <Badge variant="outline" className="text-xs">
+                                      {chat.messages.length} msgs
+                                    </Badge>
+                                  </div>
+                                  {chat.messages.length > 0 && (
+                                    <p className="text-xs text-gray-500 mt-1 truncate">
+                                      {chat.messages[chat.messages.length - 1].content.substring(0, 50)}...
+                                    </p>
+                                  )}
+                                </div>
+                                
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => toggleChatStar(chat.id, e)}
+                                    className="h-6 w-6"
+                                  >
+                                    <Star className={`h-3 w-3 ${chat.starred ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => archiveChat(chat.id, e)}
+                                    className="h-6 w-6"
+                                  >
+                                    <Archive className="h-3 w-3 text-gray-400" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => deleteChat(chat.id, e)}
+                                    className="h-6 w-6 text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No chats found</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="sidebar-dropdown-item">
-                  <Settings size={16} />
-                  <span>Settings</span>
+
+                {/* AI Tools Section */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">AI Tools</h3>
+                  <div className="space-y-2">
+                    {agents.filter(agent => agent.category === "core").map((agent) => (
+                      <div
+                        key={agent.id}
+                        className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                          currentAgent.id === agent.id ? "bg-blue-50 border border-blue-200" : ""
+                        }`}
+                        onClick={() => selectAgent(agent)}
+                      >
+                        <div className={`w-8 h-8 ${agent.color} rounded-lg flex items-center justify-center`}>
+                          {agent.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-medium text-gray-900">{agent.name}</h4>
+                            {agent.premium && (
+                              <Crown className="h-3 w-3 text-yellow-500" />
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{agent.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Writing Tools Section */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Writing Tools</h3>
+                  <div className="space-y-2">
+                    {agents.filter(agent => agent.category === "writing").map((agent) => (
+                      <div
+                        key={agent.id}
+                        className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                          currentAgent.id === agent.id ? "bg-blue-50 border border-blue-200" : ""
+                        }`}
+                        onClick={() => selectAgent(agent)}
+                      >
+                        <div className={`w-8 h-8 ${agent.color} rounded-lg flex items-center justify-center`}>
+                          {agent.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-medium text-gray-900">{agent.name}</h4>
+                            {agent.premium && (
+                              <Crown className="h-3 w-3 text-yellow-500" />
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{agent.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Analysis Tools Section */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Analysis Tools</h3>
+                  <div className="space-y-2">
+                    {agents.filter(agent => agent.category === "analysis").map((agent) => (
+                      <div
+                        key={agent.id}
+                        className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+                          currentAgent.id === agent.id ? "bg-blue-50 border border-blue-200" : ""
+                        }`}
+                        onClick={() => selectAgent(agent)}
+                      >
+                        <div className={`w-8 h-8 ${agent.color} rounded-lg flex items-center justify-center`}>
+                          {agent.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-medium text-gray-900">{agent.name}</h4>
+                            {agent.premium && (
+                              <Crown className="h-3 w-3 text-yellow-500" />
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{agent.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Collapsed sidebar navigation
+              <div className="p-2 space-y-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowChatHistory(!showChatHistory)}
+                      className="w-full h-10"
+                    >
+                      <History className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>Chat History</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {agents.map((agent) => (
+                  <Tooltip key={agent.id}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={currentAgent.id === agent.id ? "default" : "ghost"}
+                        size="icon"
+                        onClick={() => selectAgent(agent)}
+                        className="w-full h-10"
+                      >
+                        <div className="w-5 h-5 flex items-center justify-center">
+                          {React.cloneElement(agent.icon as React.ReactElement, {
+                            size: 16,
+                            className: currentAgent.id === agent.id ? "text-white" : "text-gray-600"
+                          })}
+                        </div>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <div>
+                        <p className="font-medium">{agent.name}</p>
+                        <p className="text-xs text-gray-500">{agent.description}</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
               </div>
             )}
           </div>
+
+          {/* Sidebar Footer */}
+          <div className="border-t border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              {!sidebarCollapsed ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDarkMode(!darkMode)}
+                      className="h-8 w-8"
+                    >
+                      {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      className="profile-button h-8 w-8 bg-gray-100 hover:bg-gray-200"
+                    >
+                      <UserCircle className="h-4 w-4" />
+                    </Button>
+
+                    {showProfileMenu && (
+                      <div className="profile-menu absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-48">
+                        <div className="px-3 py-2 border-b border-gray-100">
+                          <p className="text-sm font-medium text-gray-900">User Account</p>
+                          <p className="text-xs text-gray-500">Free Plan</p>
+                        </div>
+                        <div className="py-1">
+                          <Button variant="ghost" size="sm" className="w-full justify-start text-sm">
+                            <UserCircle className="h-4 w-4 mr-2" />
+                            Profile
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start text-sm">
+                            <Crown className="h-4 w-4 mr-2" />
+                            Upgrade to Pro
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start text-sm">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Settings
+                          </Button>
+                          <Button variant="ghost" size="sm" className="w-full justify-start text-sm">
+                            <Download className="h-4 w-4 mr-2" />
+                            Export Data
+                          </Button>
+                          <div className="border-t border-gray-100 my-1"></div>
+                          <Button variant="ghost" size="sm" className="w-full justify-start text-sm text-red-600 hover:text-red-700">
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Sign Out
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col gap-2 w-full">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDarkMode(!darkMode)}
+                        className="w-full h-8"
+                      >
+                        {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>Toggle Theme</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-full h-8"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>Settings</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                        className="profile-button w-full h-8 bg-gray-100 hover:bg-gray-200"
+                      >
+                        <UserCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>Profile Menu</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Chat History Dropdown */}
-        {showChatHistory && (
-          <div className="sidebar-dropdown mt-16 w-80">
-            <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100">
-              <h3 className="font-medium text-sm text-gray-900">Recent Chats</h3>
-              <Button variant="ghost" size="sm" className="h-7 text-xs hover:bg-blue-50 hover:text-blue-600" onClick={createNewChat}>
+        {/* Chat History Dropdown for collapsed sidebar */}
+        {sidebarCollapsed && showChatHistory && (
+          <div className="fixed left-16 top-20 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80 max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-medium text-sm">Recent Chats</h3>
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={createNewChat}>
                 <Plus className="h-3 w-3 mr-1" /> New
               </Button>
             </div>
             
-            {/* Search */}
-            <div className="p-3 border-b border-gray-100">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search chats..."
-                  value={chatSearchQuery}
-                  onChange={(e) => setChatSearchQuery(e.target.value)}
-                  className="pl-9 h-8 text-sm border-gray-200 focus:border-blue-300"
-                />
-              </div>
-            </div>
-
-            <div className="chat-history-list max-h-96 overflow-y-auto">
+            <div className="space-y-2">
               {filteredChats.length > 0 ? (
-                filteredChats.map((chat) => (
+                filteredChats.slice(0, 10).map((chat) => (
                   <div
                     key={chat.id}
-                    className={`chat-history-item group ${currentChatId === chat.id ? "active bg-blue-50 border-l-2 border-blue-500" : "hover:bg-gray-50"}`}
+                    className={`p-2 rounded-md cursor-pointer transition-all hover:bg-gray-50 ${
+                      currentChatId === chat.id ? "bg-blue-50 border border-blue-200" : ""
+                    }`}
                     onClick={() => selectChat(chat.id)}
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <MessageSquare size={14} className="text-gray-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-gray-400" />
+                      <div className="flex-1 truncate">
                         <div className="text-sm font-medium text-gray-900 truncate">
                           {chat.title || "New Chat"}
                         </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {chat.messages.length > 0 
-                            ? chat.messages[chat.messages.length - 1].content.substring(0, 50) + "..."
-                            : "No messages yet"
-                          }
+                        <div className="text-xs text-gray-500">
+                          {formatChatDate(new Date(chat.createdAt))}
                         </div>
                       </div>
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      {new Date(chat.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-sm text-gray-500 p-4 text-center">
-                  {chatSearchQuery ? "No chats found" : "No chat history yet"}
-                </div>
+                <div className="text-sm text-gray-500 p-2">No chat history yet</div>
               )}
             </div>
           </div>
@@ -906,7 +1352,7 @@ export default function Home() {
                         <PenTool size={16} className="text-green-500" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-sm">Handwriting Assistant</h3>
+                        <h3 className="font-medium text-sm">Writing Assistant</h3>
                         <p className="text-xs text-gray-500 mt-1">
                           Continue writing, fix grammar, shorten text, or create summaries with AI assistance.
                         </p>
@@ -1210,7 +1656,7 @@ export default function Home() {
                     {showHandwritingTools && (
                       <div className="footer-agents-dropdown handwriting-tools-dropdown">
                         <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
-                          <h3 className="font-medium text-sm">Handwriting Tools</h3>
+                          <h3 className="font-medium text-sm">Writing Tools</h3>
                         </div>
                         <div className="p-2">
                           {handwritingTools.map((tool) => (
