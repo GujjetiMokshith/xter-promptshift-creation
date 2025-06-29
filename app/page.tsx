@@ -36,8 +36,6 @@ import { ContinueWriting } from "@/components/handwriting/continue-writing"
 import { GrammarFixer } from "@/components/handwriting/grammar-fixer"
 import { TextSummarizer } from "@/components/handwriting/text-summarizer"
 import { DrawingCanvas } from "@/components/handwriting/drawing-canvas"
-import { AIChatTutor } from "@/components/handwriting/ai-chat-tutor"
-import { AIQuizGenerator } from "@/components/handwriting/ai-quiz-generator"
 import { DocumentAnalyzer } from "@/components/document-analyzer"
 
 interface Message {
@@ -143,6 +141,13 @@ export default function Home() {
       description: "Upload and analyze documents with AI-powered insights and summaries.",
       color: "bg-orange-500",
     },
+    {
+      id: "educational",
+      name: "Educational Tools",
+      icon: <GraduationCap size={14} className="text-white" />,
+      description: "AI Chat Tutor and Quiz Generator for interactive learning.",
+      color: "bg-blue-600",
+    },
   ], [])
 
   // Memoized handwriting tools
@@ -178,22 +183,6 @@ export default function Home() {
       description: "Professional drawing and handwriting",
       color: "bg-orange-500",
       component: <DrawingCanvas />
-    },
-    {
-      id: "ai-tutor",
-      name: "AI Chat Tutor",
-      icon: <GraduationCap className="h-5 w-5" />,
-      description: "Interactive AI tutor for any subject",
-      color: "bg-blue-600",
-      component: <AIChatTutor />
-    },
-    {
-      id: "quiz-generator",
-      name: "AI Quiz Generator",
-      icon: <Brain className="h-5 w-5" />,
-      description: "Generate custom quizzes on any topic",
-      color: "bg-purple-600",
-      component: <AIQuizGenerator />
     }
   ], [])
 
@@ -347,6 +336,9 @@ export default function Home() {
             return { text: "I encountered an error while analyzing your document.", processedText: "" };
           });
           break;
+        case "educational":
+          response = { text: "Please use the Educational Tools page for AI tutoring and quiz generation features." };
+          break;
         default:
           response = { text: "I'm not sure how to process that request." };
       }
@@ -363,6 +355,8 @@ export default function Home() {
         responseText = `Here's the continued text:\n\n${response.processedText}`
       } else if (currentAgent.id === "document-analyzer" && response.processedText) {
         responseText = `Here's the document analysis:\n\n${response.processedText}`
+      } else if (currentAgent.id === "educational") {
+        responseText = "For the best educational experience, please visit the Educational Tools page where you can access the AI Chat Tutor and Quiz Generator with full interactive features."
       } else {
         responseText = response.text || "I processed your request but couldn't generate a proper response."
       }
@@ -448,6 +442,10 @@ export default function Home() {
       } else if (agent.id === "document-analyzer") {
         setShowDocumentAnalyzer(true)
         return // Don't create new chat for document analyzer
+      } else if (agent.id === "educational") {
+        // Navigate to educational tools page
+        router.push("/educational")
+        return
       }
       
       // Reset messages to show empty chat with the new agent
@@ -471,7 +469,7 @@ export default function Home() {
         inputRef.current?.focus()
       }, 100)
     }
-  }, [])
+  }, [router])
 
   const selectHandwritingTool = useCallback((toolId: string) => {
     setActiveHandwritingTool(toolId)
@@ -865,7 +863,7 @@ export default function Home() {
                       <div>
                         <h3 className="font-medium text-sm">Handwriting Assistant</h3>
                         <p className="text-xs text-gray-500 mt-1">
-                          Continue writing, fix grammar, shorten text, create summaries, AI tutoring, and quiz generation.
+                          Continue writing, fix grammar, shorten text, or create summaries with AI assistance.
                         </p>
                       </div>
                     </div>
@@ -881,6 +879,21 @@ export default function Home() {
                         <h3 className="font-medium text-sm">Document Analyzer</h3>
                         <p className="text-xs text-gray-500 mt-1">
                           Upload and analyze documents with AI-powered insights, summaries, and keyword extraction.
+                        </p>
+                      </div>
+                    </div>
+
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer col-span-2"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "educational")!)}
+                  >
+                      <div className="agent-icon bg-blue-100">
+                        <GraduationCap size={16} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Educational Tools</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          AI Chat Tutor for interactive learning and Quiz Generator for testing knowledge on any topic.
                         </p>
                       </div>
                     </div>
@@ -902,7 +915,8 @@ export default function Home() {
                         currentAgent.id === "enhancer" ? "text-indigo-500" : 
                         currentAgent.id === "analyzer" ? "text-amber-500" : 
                         currentAgent.id === "handwriting" ? "text-green-500" : 
-                        currentAgent.id === "document-analyzer" ? "text-orange-500" : "text-indigo-500"
+                        currentAgent.id === "document-analyzer" ? "text-orange-500" : 
+                        currentAgent.id === "educational" ? "text-blue-600" : "text-indigo-500"
                       }`}>A</span>
                     </div>
                   )}
@@ -1077,6 +1091,8 @@ export default function Home() {
                     ? "Enter text to continue, fix, shorten, or summarize..."
                     : currentAgent.id === "document-analyzer"
                     ? "Enter document text to analyze or use the Document Analyzer interface..."
+                    : currentAgent.id === "educational"
+                    ? "Visit Educational Tools page for AI tutoring and quiz features..."
                     : "Enter your prompt or ask for prompt assistance..."
                 }
                 value={inputValue}
@@ -1113,6 +1129,8 @@ export default function Home() {
                         ? "bg-green-50 text-green-700 border-green-200"
                         : currentAgent.id === "document-analyzer"
                         ? "bg-orange-50 text-orange-700 border-orange-200"
+                        : currentAgent.id === "educational"
+                        ? "bg-blue-50 text-blue-700 border-blue-200"
                         : "bg-white/50 border-gray-200/30"
                     }`}
                     onClick={toggleFooterAgents}
@@ -1167,7 +1185,7 @@ export default function Home() {
                     {showHandwritingTools && (
                       <div className="footer-agents-dropdown handwriting-tools-dropdown">
                         <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
-                          <h3 className="font-medium text-sm">Handwriting & Educational Tools</h3>
+                          <h3 className="font-medium text-sm">Handwriting Tools</h3>
                         </div>
                         <div className="p-2">
                           {handwritingTools.map((tool) => (
