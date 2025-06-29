@@ -36,6 +36,8 @@ import { ContinueWriting } from "@/components/handwriting/continue-writing"
 import { GrammarFixer } from "@/components/handwriting/grammar-fixer"
 import { TextSummarizer } from "@/components/handwriting/text-summarizer"
 import { DrawingCanvas } from "@/components/handwriting/drawing-canvas"
+import { AIChatTutor } from "@/components/handwriting/ai-chat-tutor"
+import { AIQuizGenerator } from "@/components/handwriting/ai-quiz-generator"
 import { DocumentAnalyzer } from "@/components/document-analyzer"
 
 interface Message {
@@ -90,6 +92,10 @@ export default function Home() {
   const [showHandwritingTools, setShowHandwritingTools] = useState(false)
   const [activeHandwritingTool, setActiveHandwritingTool] = useState<string | null>(null)
 
+  // State for educational tools
+  const [showEducationalTools, setShowEducationalTools] = useState(false)
+  const [activeEducationalTool, setActiveEducationalTool] = useState<string | null>(null)
+
   // State for document analyzer
   const [showDocumentAnalyzer, setShowDocumentAnalyzer] = useState(false)
 
@@ -135,18 +141,18 @@ export default function Home() {
       color: "bg-green-500",
     },
     {
-      id: "document-analyzer",
-      name: "Document Analyzer",
-      icon: <FileText size={14} className="text-white" />,
-      description: "Upload and analyze documents with AI-powered insights and summaries.",
-      color: "bg-orange-500",
-    },
-    {
       id: "educational",
       name: "Educational Tools",
       icon: <GraduationCap size={14} className="text-white" />,
       description: "AI Chat Tutor and Quiz Generator for interactive learning.",
       color: "bg-blue-600",
+    },
+    {
+      id: "document-analyzer",
+      name: "Document Analyzer",
+      icon: <FileText size={14} className="text-white" />,
+      description: "Upload and analyze documents with AI-powered insights and summaries.",
+      color: "bg-orange-500",
     },
   ], [])
 
@@ -183,6 +189,26 @@ export default function Home() {
       description: "Professional drawing and handwriting",
       color: "bg-orange-500",
       component: <DrawingCanvas />
+    }
+  ], [])
+
+  // Memoized educational tools
+  const educationalTools = useMemo(() => [
+    {
+      id: "ai-tutor",
+      name: "AI Chat Tutor",
+      icon: <GraduationCap className="h-5 w-5" />,
+      description: "Interactive AI tutor for any subject",
+      color: "bg-blue-500",
+      component: <AIChatTutor />
+    },
+    {
+      id: "quiz-generator",
+      name: "AI Quiz Generator",
+      icon: <Brain className="h-5 w-5" />,
+      description: "Create custom quizzes on any topic",
+      color: "bg-purple-500",
+      component: <AIQuizGenerator />
     }
   ], [])
 
@@ -267,6 +293,9 @@ export default function Home() {
       if (!target.closest(".handwriting-tools-dropdown") && !target.closest(".handwriting-tools-button")) {
         setShowHandwritingTools(false)
       }
+      if (!target.closest(".educational-tools-dropdown") && !target.closest(".educational-tools-button")) {
+        setShowEducationalTools(false)
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside, { passive: true })
@@ -330,14 +359,14 @@ export default function Home() {
             return { text: "I encountered an error while processing your text.", processedText: "" };
           });
           break;
+        case "educational":
+          response = { text: "Please use the Educational Tools below for AI tutoring and quiz generation features." };
+          break;
         case "document-analyzer":
           response = await analyzeDocument(currentInput, "summarize").catch(error => {
             console.error("Error analyzing document:", error);
             return { text: "I encountered an error while analyzing your document.", processedText: "" };
           });
-          break;
-        case "educational":
-          response = { text: "Please use the Educational Tools page for AI tutoring and quiz generation features." };
           break;
         default:
           response = { text: "I'm not sure how to process that request." };
@@ -353,10 +382,10 @@ export default function Home() {
         responseText = `Prompt Analysis Score: ${score}/100\n\n## Strengths\n${strengths.map((s) => `- ${s}`).join("\n")}\n\n## Areas for improvement\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\n## Suggestions\n${suggestions.map((s) => `- ${s}`).join("\n")}`
       } else if (currentAgent.id === "handwriting" && response.processedText) {
         responseText = `Here's the continued text:\n\n${response.processedText}`
+      } else if (currentAgent.id === "educational") {
+        responseText = "For the best educational experience, please use the Educational Tools below where you can access the AI Chat Tutor and Quiz Generator with full interactive features."
       } else if (currentAgent.id === "document-analyzer" && response.processedText) {
         responseText = `Here's the document analysis:\n\n${response.processedText}`
-      } else if (currentAgent.id === "educational") {
-        responseText = "For the best educational experience, please visit the Educational Tools page where you can access the AI Chat Tutor and Quiz Generator with full interactive features."
       } else {
         responseText = response.text || "I processed your request but couldn't generate a proper response."
       }
@@ -434,18 +463,18 @@ export default function Home() {
       // Reset special states
       setShowHandwritingTools(false)
       setActiveHandwritingTool(null)
+      setShowEducationalTools(false)
+      setActiveEducationalTool(null)
       setShowDocumentAnalyzer(false)
       
       // If handwriting assistant is selected, show tools
       if (agent.id === "handwriting") {
         setShowHandwritingTools(true)
+      } else if (agent.id === "educational") {
+        setShowEducationalTools(true)
       } else if (agent.id === "document-analyzer") {
         setShowDocumentAnalyzer(true)
         return // Don't create new chat for document analyzer
-      } else if (agent.id === "educational") {
-        // Navigate to educational tools page
-        router.push("/educational")
-        return
       }
       
       // Reset messages to show empty chat with the new agent
@@ -469,11 +498,17 @@ export default function Home() {
         inputRef.current?.focus()
       }, 100)
     }
-  }, [router])
+  }, [])
 
   const selectHandwritingTool = useCallback((toolId: string) => {
     setActiveHandwritingTool(toolId)
     setShowHandwritingTools(false)
+    setMessages([])
+  }, [])
+
+  const selectEducationalTool = useCallback((toolId: string) => {
+    setActiveEducationalTool(toolId)
+    setShowEducationalTools(false)
     setMessages([])
   }, [])
 
@@ -485,15 +520,24 @@ export default function Home() {
   const toggleFooterAgents = useCallback(() => {
     setShowFooterAgents(!showFooterAgents)
     setShowHandwritingTools(false)
+    setShowEducationalTools(false)
   }, [showFooterAgents])
 
   const toggleHandwritingTools = useCallback(() => {
     setShowHandwritingTools(!showHandwritingTools)
     setShowFooterAgents(false)
+    setShowEducationalTools(false)
   }, [showHandwritingTools])
+
+  const toggleEducationalTools = useCallback(() => {
+    setShowEducationalTools(!showEducationalTools)
+    setShowFooterAgents(false)
+    setShowHandwritingTools(false)
+  }, [showEducationalTools])
 
   const backToChat = useCallback(() => {
     setActiveHandwritingTool(null)
+    setActiveEducationalTool(null)
     setShowDocumentAnalyzer(false)
     setMessages([])
   }, [])
@@ -638,6 +682,63 @@ export default function Home() {
                 <TooltipTrigger asChild>
                   <div className="sidebar-icon transition-smooth active">
                     <PenTool className="h-5 w-5" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>{tool?.name}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+
+        <div className="flex-1 flex flex-col blue-glow-top">
+          <div className="content-area">
+            <div className="max-w-6xl mx-auto h-full">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  {tool?.icon}
+                  <h1 className="text-2xl font-bold text-gray-900">{tool?.name}</h1>
+                </div>
+                <p className="text-gray-600">{tool?.description}</p>
+              </div>
+              {tool?.component}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // If an educational tool is active, show its component
+  if (activeEducationalTool) {
+    const tool = educationalTools.find(t => t.id === activeEducationalTool)
+    
+    return (
+      <div className="app-container">
+        <TooltipProvider delayDuration={300}>
+          <div className="sidebar">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
+                  onClick={backToChat}
+                >
+                  <ArrowRight className="h-5 w-5 rotate-180" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Back to Chat</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex flex-col items-center gap-8 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="sidebar-icon transition-smooth active">
+                    <GraduationCap className="h-5 w-5" />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
@@ -870,21 +971,6 @@ export default function Home() {
 
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
-                    onClick={() => selectAgent(agents.find(agent => agent.id === "document-analyzer")!)}
-                  >
-                      <div className="agent-icon bg-orange-100">
-                        <FileText size={16} className="text-orange-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-sm">Document Analyzer</h3>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Upload and analyze documents with AI-powered insights, summaries, and keyword extraction.
-                        </p>
-                      </div>
-                    </div>
-
-                  <div 
-                    className="agent-card transition-smooth cursor-pointer col-span-2"
                     onClick={() => selectAgent(agents.find(agent => agent.id === "educational")!)}
                   >
                       <div className="agent-icon bg-blue-100">
@@ -894,6 +980,21 @@ export default function Home() {
                         <h3 className="font-medium text-sm">Educational Tools</h3>
                         <p className="text-xs text-gray-500 mt-1">
                           AI Chat Tutor for interactive learning and Quiz Generator for testing knowledge on any topic.
+                        </p>
+                      </div>
+                    </div>
+
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer col-span-2"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "document-analyzer")!)}
+                  >
+                      <div className="agent-icon bg-orange-100">
+                        <FileText size={16} className="text-orange-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Document Analyzer</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Upload and analyze documents with AI-powered insights, summaries, and keyword extraction.
                         </p>
                       </div>
                     </div>
@@ -915,8 +1016,8 @@ export default function Home() {
                         currentAgent.id === "enhancer" ? "text-indigo-500" : 
                         currentAgent.id === "analyzer" ? "text-amber-500" : 
                         currentAgent.id === "handwriting" ? "text-green-500" : 
-                        currentAgent.id === "document-analyzer" ? "text-orange-500" : 
-                        currentAgent.id === "educational" ? "text-blue-600" : "text-indigo-500"
+                        currentAgent.id === "educational" ? "text-blue-600" : 
+                        currentAgent.id === "document-analyzer" ? "text-orange-500" : "text-indigo-500"
                       }`}>A</span>
                     </div>
                   )}
@@ -1089,10 +1190,10 @@ export default function Home() {
                     ? "Enter a prompt to analyze..." 
                     : currentAgent.id === "handwriting"
                     ? "Enter text to continue, fix, shorten, or summarize..."
+                    : currentAgent.id === "educational"
+                    ? "Use the Educational Tools below for AI tutoring and quiz features..."
                     : currentAgent.id === "document-analyzer"
                     ? "Enter document text to analyze or use the Document Analyzer interface..."
-                    : currentAgent.id === "educational"
-                    ? "Visit Educational Tools page for AI tutoring and quiz features..."
                     : "Enter your prompt or ask for prompt assistance..."
                 }
                 value={inputValue}
@@ -1127,10 +1228,10 @@ export default function Home() {
                         ? "bg-amber-50 text-amber-700 border-amber-200"
                         : currentAgent.id === "handwriting"
                         ? "bg-green-50 text-green-700 border-green-200"
-                        : currentAgent.id === "document-analyzer"
-                        ? "bg-orange-50 text-orange-700 border-orange-200"
                         : currentAgent.id === "educational"
                         ? "bg-blue-50 text-blue-700 border-blue-200"
+                        : currentAgent.id === "document-analyzer"
+                        ? "bg-orange-50 text-orange-700 border-orange-200"
                         : "bg-white/50 border-gray-200/30"
                     }`}
                     onClick={toggleFooterAgents}
@@ -1193,6 +1294,47 @@ export default function Home() {
                               key={tool.id}
                               className="agent-option"
                               onClick={() => selectHandwritingTool(tool.id)}
+                            >
+                              <div className={`w-6 h-6 ${tool.color} rounded-md flex items-center justify-center text-white`}>
+                                {tool.icon}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium">{tool.name}</div>
+                                <div className="text-xs text-gray-500">{tool.description}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Educational Tools Dropdown */}
+                {currentAgent.id === "educational" && (
+                  <div className="relative">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs flex items-center gap-1 hover:bg-blue-50/50 transition-smooth border educational-tools-button bg-blue-50 text-blue-700 border-blue-200"
+                      onClick={toggleEducationalTools}
+                    >
+                      <GraduationCap className="h-3 w-3" />
+                      Tools
+                      <ChevronDown className="h-3 w-3 ml-1 text-gray-400" />
+                    </Button>
+
+                    {showEducationalTools && (
+                      <div className="footer-agents-dropdown educational-tools-dropdown">
+                        <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
+                          <h3 className="font-medium text-sm">Educational Tools</h3>
+                        </div>
+                        <div className="p-2">
+                          {educationalTools.map((tool) => (
+                            <div
+                              key={tool.id}
+                              className="agent-option"
+                              onClick={() => selectEducationalTool(tool.id)}
                             >
                               <div className={`w-6 h-6 ${tool.color} rounded-md flex items-center justify-center text-white`}>
                                 {tool.icon}
