@@ -786,6 +786,18 @@ export default function Home() {
                       </div>
                     </div>
 
+                  <Link href="/document-analyzer" className="agent-card transition-smooth cursor-pointer hover:no-underline">
+                    <div className="agent-icon bg-purple-100">
+                      <FileText size={16} className="text-purple-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm">AI Document Analyzer</h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Extract insights, summaries, keywords, and answers from your documents using advanced AI.
+                      </p>
+                    </div>
+                  </Link>
+
                   <Link href="/handwriting" className="agent-card transition-smooth cursor-pointer hover:no-underline">
                     <div className="agent-icon bg-blue-100">
                       <ExternalLink size={16} className="text-blue-500" />

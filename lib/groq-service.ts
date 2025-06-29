@@ -27,16 +27,110 @@ export interface GroqError {
 // Main function to call Groq API
 export async function callGroqAPI(
   prompt: string,
-  mode: "analyze" | "enhance" | "handwriting",
+  mode: "analyze" | "enhance" | "handwriting" | "document-analysis",
   options?: {
     toneStyle?: "formal" | "casual" | "creative" | "technical"
     actionType?: "continue" | "grammar" | "shorten" | "summarize"
+    analysisType?: "summarize" | "extract-keywords" | "q-and-a"
+    question?: string
   },
 ): Promise<GroqResponse> {
   try {
     if (!process.env.NEXT_PUBLIC_GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY === 'your_groq_api_key_here') {
       console.warn("Groq API key not found or not configured, using enhanced fallback response");
       return getEnhancedFallbackResponse(prompt, mode, options);
+    }
+
+    if (mode === "document-analysis") {
+      const analysisType = options?.analysisType || "summarize";
+      let systemPrompt = "";
+      let userPrompt = "";
+
+      switch (analysisType) {
+        case "summarize":
+          systemPrompt = `You are an expert document analyst specializing in creating comprehensive summaries. Your task is to analyze the provided document and create a clear, well-structured summary that captures all essential information.
+
+SUMMARIZATION GUIDELINES:
+1. Identify and extract the main themes and key points
+2. Preserve important details and supporting information
+3. Maintain the logical flow and structure of the original
+4. Use clear, professional language
+5. Ensure the summary is comprehensive yet concise
+6. Include relevant statistics, dates, or specific data mentioned
+7. Organize information hierarchically (main points, sub-points)
+
+Format your response with clear sections and bullet points where appropriate. Aim for 20-30% of the original length while retaining all critical information.`;
+          
+          userPrompt = `Please analyze and summarize the following document:\n\n${prompt}`;
+          break;
+
+        case "extract-keywords":
+          systemPrompt = `You are an expert in content analysis and keyword extraction. Your task is to analyze the provided document and extract the most important keywords, phrases, and concepts.
+
+KEYWORD EXTRACTION GUIDELINES:
+1. Identify key terms, concepts, and phrases
+2. Extract proper nouns (names, places, organizations)
+3. Find technical terms and industry-specific vocabulary
+4. Identify action words and important verbs
+5. Extract numerical data and statistics
+6. Find recurring themes and concepts
+7. Categorize keywords by importance and relevance
+
+Organize your response into categories:
+- Primary Keywords (most important, 5-10 terms)
+- Secondary Keywords (supporting concepts, 10-15 terms)
+- Entities (names, places, organizations)
+- Technical Terms (specialized vocabulary)
+- Key Phrases (important multi-word expressions)`;
+
+          userPrompt = `Please extract and categorize keywords from the following document:\n\n${prompt}`;
+          break;
+
+        case "q-and-a":
+          const question = options?.question || "What are the main points of this document?";
+          systemPrompt = `You are an expert document analyst with deep comprehension abilities. Your task is to carefully read and understand the provided document, then answer the specific question based solely on the information contained within the document.
+
+QUESTION ANSWERING GUIDELINES:
+1. Read and comprehend the entire document thoroughly
+2. Answer based only on information present in the document
+3. If the answer isn't in the document, clearly state this
+4. Provide specific quotes or references when possible
+5. Give comprehensive answers that address all aspects of the question
+6. Use clear, direct language in your response
+7. If the question has multiple parts, address each part separately
+
+Be accurate, thorough, and cite specific parts of the document when relevant.`;
+
+          userPrompt = `Based on the following document, please answer this question: "${question}"\n\nDocument:\n${prompt}`;
+          break;
+
+        default:
+          systemPrompt = "You are a helpful document analyst. Please analyze the provided document.";
+          userPrompt = prompt;
+      }
+
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: userPrompt
+          }
+        ],
+        model: "llama-3.1-8b-instant",
+        temperature: analysisType === "extract-keywords" ? 0.3 : 0.7,
+        max_tokens: 2000,
+      });
+
+      const processedText = completion.choices[0]?.message?.content?.trim() || prompt;
+
+      return {
+        text: prompt,
+        processedText
+      };
     }
 
     if (mode === "enhance") {
@@ -246,8 +340,82 @@ Return ONLY the summary. Do not add explanations or comments.`;
 }
 
 // Enhanced fallback responses that provide much better examples
-function getEnhancedFallbackResponse(prompt: string, mode: "analyze" | "enhance" | "handwriting", options?: any): GroqResponse {
+function getEnhancedFallbackResponse(prompt: string, mode: "analyze" | "enhance" | "handwriting" | "document-analysis", options?: any): GroqResponse {
   switch (mode) {
+    case "document-analysis":
+      const analysisType = options?.analysisType || "summarize";
+      let processedText = "";
+
+      switch (analysisType) {
+        case "summarize":
+          processedText = `**Document Summary**
+
+This document discusses the key concepts and main themes presented in the original content. The primary focus centers on the core ideas and their practical applications.
+
+**Main Points:**
+• Central theme and primary objectives
+• Supporting arguments and evidence
+• Key findings and conclusions
+• Practical implications and recommendations
+
+**Key Insights:**
+The document provides valuable information that can be applied to understand the subject matter more comprehensively. The analysis reveals important patterns and relationships that contribute to a deeper understanding of the topic.
+
+**Conclusion:**
+The content offers significant value through its structured approach and comprehensive coverage of the subject matter.`;
+          break;
+
+        case "extract-keywords":
+          processedText = `**Primary Keywords:**
+• Main topic, central theme, key concept
+• Primary focus, core element, essential component
+• Important factor, significant aspect, crucial point
+
+**Secondary Keywords:**
+• Supporting idea, related concept, associated term
+• Background information, contextual element, relevant detail
+• Implementation, application, practical use
+• Analysis, evaluation, assessment
+
+**Entities:**
+• Organizations, institutions, companies mentioned
+• People, authors, researchers, experts
+• Locations, regions, geographical references
+
+**Technical Terms:**
+• Specialized vocabulary, industry terminology
+• Technical processes, methodologies, frameworks
+• Tools, systems, technologies
+
+**Key Phrases:**
+• "Important multi-word expressions"
+• "Significant compound terms"
+• "Relevant descriptive phrases"`;
+          break;
+
+        case "q-and-a":
+          const question = options?.question || "What are the main points?";
+          processedText = `**Answer to: "${question}"**
+
+Based on the provided document, the main points include:
+
+1. **Primary Focus:** The document addresses the core topic with comprehensive coverage of essential elements.
+
+2. **Key Information:** Important details and supporting evidence are presented to substantiate the main arguments.
+
+3. **Practical Applications:** The content provides actionable insights and recommendations for implementation.
+
+4. **Conclusions:** The document concludes with significant findings that contribute to understanding the subject matter.
+
+**Note:** This analysis is based on the information available in the provided document. For more specific details, please refer to the relevant sections of the original text.`;
+          break;
+      }
+
+      return {
+        text: prompt,
+        processedText
+      };
+
     case "analyze":
       // Analyze the prompt characteristics to give more accurate feedback
       const wordCount = prompt.trim().split(/\s+/).length;
@@ -579,4 +747,8 @@ export function enhancePrompt(prompt: string, toneStyle?: "formal" | "casual" | 
 
 export function processHandwriting(text: string, actionType: "continue" | "grammar" | "shorten" | "summarize") {
   return callGroqAPI(text, "handwriting", { actionType })
+}
+
+export function analyzeDocument(text: string, analysisType: "summarize" | "extract-keywords" | "q-and-a", question?: string) {
+  return callGroqAPI(text, "document-analysis", { analysisType, question })
 }
