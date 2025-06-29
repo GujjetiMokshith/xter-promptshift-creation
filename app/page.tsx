@@ -90,6 +90,9 @@ export default function Home() {
   const [showHandwritingTools, setShowHandwritingTools] = useState(false)
   const [activeHandwritingTool, setActiveHandwritingTool] = useState<string | null>(null)
 
+  // State for document analyzer
+  const [showDocumentAnalyzer, setShowDocumentAnalyzer] = useState(false)
+
   // State for AI agents
   const [currentAgent, setCurrentAgent] = useState<Agent>({
     id: "enhancer",
@@ -125,18 +128,18 @@ export default function Home() {
       color: "bg-amber-500",
     },
     {
-      id: "document",
-      name: "Document Analyzer",
-      icon: <FileText size={14} className="text-white" />,
-      description: "Upload and analyze documents with AI-powered summaries and insights.",
-      color: "bg-orange-500",
-    },
-    {
       id: "handwriting",
       name: "Handwriting Assistant",
       icon: <PenTool size={14} className="text-white" />,
       description: "Continue writing, fix grammar, shorten text, or create summaries.",
       color: "bg-green-500",
+    },
+    {
+      id: "document-analyzer",
+      name: "Document Analyzer",
+      icon: <FileText size={14} className="text-white" />,
+      description: "Upload and analyze documents with AI-powered insights and summaries.",
+      color: "bg-orange-500",
     },
   ]
 
@@ -255,6 +258,8 @@ export default function Home() {
         setCurrentAgent(selectedAgent)
         if (selectedAgent.id === "handwriting") {
           setShowHandwritingTools(true)
+        } else if (selectedAgent.id === "document-analyzer") {
+          setShowDocumentAnalyzer(true)
         }
       }
     }
@@ -308,19 +313,19 @@ export default function Home() {
             return { text: "I encountered an error while analyzing your prompt.", analysis: { score: 0, strengths: [], weaknesses: [], suggestions: [] } };
           });
           break;
-        case "document":
-          // For document analyzer, we'll provide guidance on using the tool
-          response = {
-            text: "To analyze documents, please use the Document Analyzer interface above. You can upload PDF, TXT, DOC, or DOCX files, or paste text directly. The tool offers three analysis types:\n\n• **Document Summary** - Get comprehensive summaries\n• **Extract Keywords** - Identify key terms and concepts\n• **Question & Answer** - Ask specific questions about your document\n\nSimply upload your document and choose your preferred analysis type to get started!",
-            processedText: ""
-          };
-          break;
         case "handwriting":
           // For handwriting assistant, we'll default to "continue" action
           // In a real implementation, you might want to detect the intent or ask the user
           response = await processHandwriting(inputValue, "continue").catch(error => {
             console.error("Error processing handwriting:", error);
             return { text: "I encountered an error while processing your text.", processedText: "" };
+          });
+          break;
+        case "document-analyzer":
+          // For document analyzer, we'll default to "summarize" action
+          response = await analyzeDocument(inputValue, "summarize").catch(error => {
+            console.error("Error analyzing document:", error);
+            return { text: "I encountered an error while analyzing your document.", processedText: "" };
           });
           break;
         default:
@@ -337,6 +342,8 @@ export default function Home() {
         responseText = `Prompt Analysis Score: ${score}/100\n\n## Strengths\n${strengths.map((s) => `- ${s}`).join("\n")}\n\n## Areas for improvement\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\n## Suggestions\n${suggestions.map((s) => `- ${s}`).join("\n")}`
       } else if (currentAgent.id === "handwriting" && response.processedText) {
         responseText = `Here's the continued text:\n\n${response.processedText}`
+      } else if (currentAgent.id === "document-analyzer" && response.processedText) {
+        responseText = `Here's the document analysis:\n\n${response.processedText}`
       } else {
         responseText = response.text || "I processed your request but couldn't generate a proper response."
       }
@@ -412,12 +419,17 @@ export default function Home() {
       setCurrentAgent(agent)
       setShowFooterAgents(false)
       
+      // Reset special states
+      setShowHandwritingTools(false)
+      setActiveHandwritingTool(null)
+      setShowDocumentAnalyzer(false)
+      
       // If handwriting assistant is selected, show tools
       if (agent.id === "handwriting") {
         setShowHandwritingTools(true)
-      } else {
-        setShowHandwritingTools(false)
-        setActiveHandwritingTool(null)
+      } else if (agent.id === "document-analyzer") {
+        setShowDocumentAnalyzer(true)
+        return // Don't create new chat for document analyzer
       }
       
       // Reset messages to show empty chat with the new agent
@@ -466,7 +478,56 @@ export default function Home() {
 
   const backToChat = () => {
     setActiveHandwritingTool(null)
+    setShowDocumentAnalyzer(false)
     setMessages([])
+  }
+
+  // If document analyzer is active, show its component
+  if (showDocumentAnalyzer) {
+    return (
+      <div className="app-container">
+        {/* Transparent sidebar with tooltips */}
+        <TooltipProvider delayDuration={300}>
+          <div className="sidebar">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
+                  onClick={backToChat}
+                >
+                  <ArrowRight className="h-5 w-5 rotate-180" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Back to Chat</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex flex-col items-center gap-8 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="sidebar-icon transition-smooth active">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Document Analyzer</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col blue-glow-top">
+          <div className="content-area">
+            <DocumentAnalyzer onBackToMain={backToChat} />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // If a handwriting tool is active, show its component
@@ -591,180 +652,6 @@ export default function Home() {
                 <p className="text-gray-600">{tool?.description}</p>
               </div>
               {tool?.component}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // If document analyzer is selected, show the document analyzer component
-  if (currentAgent.id === "document") {
-    return (
-      <div className="app-container">
-        {/* Transparent sidebar with tooltips */}
-        <TooltipProvider delayDuration={300}>
-          <div className="sidebar">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
-                  onClick={createNewChat}
-                >
-                  <Plus className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>New Chat</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <div className="flex flex-col items-center gap-8 mt-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    className={`sidebar-icon transition-smooth ${showChatHistory ? "active" : ""}`}
-                    onClick={() => {
-                      setShowChatHistory(!showChatHistory)
-                    }}
-                  >
-                    <MessageSquare className="h-5 w-5" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Chat History</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-
-            <div className="mt-auto">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="sidebar-icon transition-smooth">
-                    <Settings className="h-5 w-5" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Settings</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-
-            <div className="mt-4 relative">
-              <div
-                className="w-8 h-8 bg-gray-200/20 rounded-full flex items-center justify-center transition-smooth hover:bg-gray-300/20 cursor-pointer"
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-              >
-                <span className="text-sm font-medium">U</span>
-              </div>
-
-              {showProfileMenu && (
-                <div className="sidebar-dropdown">
-                  <div className="sidebar-dropdown-item">
-                    <User size={16} />
-                    <span>Profile</span>
-                  </div>
-                  <div className="sidebar-dropdown-item">
-                    <Settings size={16} />
-                    <span>Settings</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Chat History Dropdown */}
-          {showChatHistory && (
-            <div className="sidebar-dropdown mt-16">
-              <div className="flex justify-between items-center px-2 pb-2 border-b border-gray-100/20">
-                <h3 className="font-medium text-sm">Recent Chats</h3>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={createNewChat}>
-                  <Plus className="h-3 w-3 mr-1" /> New
-                </Button>
-              </div>
-              <div className="chat-history-list">
-                {chats.length > 0 ? (
-                  chats.map((chat) => (
-                    <div
-                      key={chat.id}
-                      className={`chat-history-item ${currentChatId === chat.id ? "active" : ""}`}
-                      onClick={() => selectChat(chat.id)}
-                    >
-                      <MessageSquare size={16} />
-                      <div className="flex-1 truncate">{chat.title || "New Chat"}</div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-sm text-gray-500 p-2">No chat history yet</div>
-                )}
-              </div>
-            </div>
-          )}
-
-        </TooltipProvider>
-
-        {/* Main Content with Document Analyzer */}
-        <div className="flex-1 flex flex-col blue-glow-top">
-          <div className="content-area">
-            <div className="max-w-6xl mx-auto h-full">
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <FileText className="h-6 w-6 text-orange-600" />
-                  <h1 className="text-2xl font-bold text-gray-900">Document Analyzer</h1>
-                </div>
-                <p className="text-gray-600">Upload and analyze documents with AI-powered summaries and insights</p>
-              </div>
-              <DocumentAnalyzer />
-            </div>
-          </div>
-
-          <div className="footer">
-            <div className="max-w-4xl mx-auto">
-              <div className="flex items-center justify-between mt-3">
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={`text-xs flex items-center gap-1 hover:bg-gray-50/50 transition-smooth border footer-agents-button bg-orange-50 text-orange-700 border-orange-200`}
-                      onClick={toggleFooterAgents}
-                    >
-                      <div className={`w-4 h-4 ${currentAgent.color} rounded-md flex items-center justify-center mr-1`}>
-                        {currentAgent.icon}
-                      </div>
-                      {currentAgent.name}
-                      <ChevronDown className="h-3 w-3 ml-1 text-gray-400" />
-                    </Button>
-
-                    {showFooterAgents && (
-                      <div className="footer-agents-dropdown">
-                        <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
-                          <h3 className="font-medium text-sm">Select AI Agent</h3>
-                        </div>
-                        <div className="p-2">
-                          {agents.map((agent) => (
-                            <div
-                              key={agent.id}
-                              className={`agent-option ${currentAgent.id === agent.id ? "active" : ""}`}
-                              onClick={() => selectAgent(agent)}
-                            >
-                              <div className={`w-6 h-6 ${agent.color} rounded-md flex items-center justify-center`}>
-                                {agent.icon}
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium">{agent.name}</div>
-                                <div className="text-xs text-gray-500">{agent.description}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -962,21 +849,6 @@ export default function Home() {
 
                   <div 
                     className="agent-card transition-smooth cursor-pointer"
-                    onClick={() => selectAgent(agents.find(agent => agent.id === "document"))}
-                  >
-                      <div className="agent-icon bg-orange-100">
-                        <FileText size={16} className="text-orange-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-sm">Document Analyzer</h3>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Upload and analyze documents with AI-powered summaries, keyword extraction, and Q&A.
-                        </p>
-                      </div>
-                    </div>
-
-                  <div 
-                    className="agent-card transition-smooth cursor-pointer"
                     onClick={() => selectAgent(agents.find(agent => agent.id === "handwriting"))}
                   >
                       <div className="agent-icon bg-green-100">
@@ -989,10 +861,23 @@ export default function Home() {
                         </p>
                       </div>
                     </div>
-                </div>
 
-                <div className="mt-6">
-                  <Link href="/handwriting" className="agent-card transition-smooth cursor-pointer hover:no-underline block">
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "document-analyzer"))}
+                  >
+                      <div className="agent-icon bg-orange-100">
+                        <FileText size={16} className="text-orange-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Document Analyzer</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Upload and analyze documents with AI-powered insights, summaries, and keyword extraction.
+                        </p>
+                      </div>
+                    </div>
+
+                  <Link href="/handwriting" className="agent-card transition-smooth cursor-pointer hover:no-underline">
                     <div className="agent-icon bg-blue-100">
                       <ExternalLink size={16} className="text-blue-500" />
                     </div>
@@ -1020,8 +905,8 @@ export default function Home() {
                       <span className={`text-xs font-bold ${
                         currentAgent.id === "enhancer" ? "text-indigo-500" : 
                         currentAgent.id === "analyzer" ? "text-amber-500" : 
-                        currentAgent.id === "document" ? "text-orange-500" :
-                        currentAgent.id === "handwriting" ? "text-green-500" : "text-indigo-500"
+                        currentAgent.id === "handwriting" ? "text-green-500" : 
+                        currentAgent.id === "document-analyzer" ? "text-orange-500" : "text-indigo-500"
                       }`}>A</span>
                     </div>
                   )}
@@ -1029,7 +914,7 @@ export default function Home() {
                     <div className="whitespace-pre-wrap">
                       {message.content.split('\n').map((line, i) => {
                         // For enhanced prompt display (single output)
-                        if (line.startsWith("Here's your enhanced prompt:") || line.startsWith("Here's the continued text:")) {
+                        if (line.startsWith("Here's your enhanced prompt:") || line.startsWith("Here's the continued text:") || line.startsWith("Here's the document analysis:")) {
                           return <div key={i} className="font-medium text-indigo-700 mb-2">{line}</div>;
                         }
                         
@@ -1192,16 +1077,15 @@ export default function Home() {
                     ? "Enter a prompt to enhance..." 
                     : currentAgent.id === "analyzer"
                     ? "Enter a prompt to analyze..." 
-                    : currentAgent.id === "document"
-                    ? "Use the Document Analyzer above to upload and analyze documents..."
                     : currentAgent.id === "handwriting"
                     ? "Enter text to continue, fix, shorten, or summarize..."
+                    : currentAgent.id === "document-analyzer"
+                    ? "Enter document text to analyze or use the Document Analyzer interface..."
                     : "Enter your prompt or ask for prompt assistance..."
                 }
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={currentAgent.id === "document"}
               />
               <div className="chat-input-buttons">
                 <Button variant="ghost" size="icon" className="chat-input-button">
@@ -1212,9 +1096,9 @@ export default function Home() {
                   size="icon"
                   className={`chat-input-button ${inputValue.trim() ? "glow-button" : ""}`}
                   onClick={handleSendMessage}
-                  disabled={!inputValue.trim() || isTyping || currentAgent.id === "document"}
+                  disabled={!inputValue.trim() || isTyping}
                 >
-                  <Send className={`h-5 w-5 ${inputValue.trim() && currentAgent.id !== "document" ? "text-blue-500" : "text-gray-400"}`} />
+                  <Send className={`h-5 w-5 ${inputValue.trim() ? "text-blue-500" : "text-gray-400"}`} />
                 </Button>
               </div>
             </div>
@@ -1229,10 +1113,10 @@ export default function Home() {
                         ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
                         : currentAgent.id === "analyzer"
                         ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : currentAgent.id === "document"
-                        ? "bg-orange-50 text-orange-700 border-orange-200"
                         : currentAgent.id === "handwriting"
                         ? "bg-green-50 text-green-700 border-green-200"
+                        : currentAgent.id === "document-analyzer"
+                        ? "bg-orange-50 text-orange-700 border-orange-200"
                         : "bg-white/50 border-gray-200/30"
                     }`}
                     onClick={toggleFooterAgents}
