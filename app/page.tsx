@@ -1,305 +1,58 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { 
-  Send, 
-  Bot, 
-  User, 
-  MessageSquare, 
-  Sparkles, 
-  Wand2, 
-  FileText, 
-  PenTool, 
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import "./globals.css"
+import {
+  Plus,
+  Copy,
+  MessageSquare,
+  Settings,
+  Mic,
+  Send,
+  Bot,
+  User,
   ChevronDown,
-  GraduationCap,
-  Brain,
-  Zap,
-  Target,
-  Lightbulb,
+  Sparkles,
+  Wand2,
+  LineChart,
+  ExternalLink,
+  Key,
+  AlertCircle,
+  PenTool,
+  ArrowRight,
+  FileText,
   BookOpen,
   Palette,
-  Search,
-  BarChart3,
-  Microscope,
-  Calculator,
-  Globe,
-  Code,
-  Atom,
-  Beaker,
-  Telescope,
-  Music,
-  Brush,
-  Camera,
-  Gamepad2,
-  Heart,
-  Leaf,
-  Star,
-  Rocket,
-  Crown,
-  Diamond,
-  Flame,
-  Shield,
-  Trophy,
-  Magic,
-  Compass,
-  Eye,
-  Fingerprint,
-  Cpu,
-  Database,
-  Network,
-  Settings,
-  Layers,
-  Grid,
-  Puzzle,
-  Lock,
-  Key,
-  Gem,
-  Coins,
-  TrendingUp,
-  Activity,
-  BarChart,
-  PieChart,
-  LineChart,
-  Radar,
-  Gauge,
-  Timer,
-  Clock,
-  Calendar,
-  MapPin,
-  Navigation,
-  Compass as CompassIcon,
-  Mountain,
-  Waves,
-  Sun,
-  Moon,
-  Cloud,
-  Snowflake,
-  Umbrella,
-  Rainbow,
-  Flower,
-  Tree,
-  Butterfly,
-  Fish,
-  Bird,
-  Cat,
-  Dog,
-  Rabbit,
-  Bear,
-  Lion,
-  Elephant,
-  Turtle,
-  Octopus,
-  Crab,
-  Snail,
-  Bee,
-  Ladybug,
-  Spider,
-  Ant,
-  Worm,
-  Feather,
-  Egg,
-  Seed,
-  Sprout,
-  Cactus,
-  Mushroom,
-  Cherry,
-  Apple,
-  Banana,
-  Grape,
-  Orange,
-  Lemon,
-  Strawberry,
-  Watermelon,
-  Pineapple,
-  Coconut,
-  Avocado,
-  Carrot,
-  Corn,
-  Pepper,
-  Tomato,
-  Potato,
-  Onion,
-  Garlic,
-  Bread,
-  Cheese,
-  Milk,
-  Coffee,
-  Tea,
-  Wine,
-  Beer,
-  Cocktail,
-  IceCream,
-  Cookie,
-  Cake,
-  Pizza,
-  Hamburger,
-  Sandwich,
-  Taco,
-  Sushi,
-  Ramen,
-  Soup,
-  Salad,
-  Pasta,
-  Rice,
-  Meat,
-  Chicken,
-  Fish as FishIcon,
-  Shrimp,
-  Lobster,
-  Crab as CrabIcon,
-  Oyster,
-  Clam,
-  Squid,
-  Octopus as OctopusIcon,
-  Jellyfish,
-  Shark,
-  Whale,
-  Dolphin,
-  Seal,
-  Penguin,
-  Polar,
-  Koala,
-  Panda,
-  Monkey,
-  Gorilla,
-  Tiger,
-  Leopard,
-  Cheetah,
-  Zebra,
-  Giraffe,
-  Hippo,
-  Rhino,
-  Camel,
-  Horse,
-  Cow,
-  Pig,
-  Sheep,
-  Goat,
-  Deer,
-  Moose,
-  Wolf,
-  Fox,
-  Raccoon,
-  Squirrel,
-  Hedgehog,
-  Bat,
-  Owl,
-  Eagle,
-  Hawk,
-  Parrot,
-  Flamingo,
-  Swan,
-  Duck,
-  Goose,
-  Chicken as ChickenIcon,
-  Rooster,
-  Turkey,
-  Peacock,
-  Dove,
-  Crow,
-  Robin,
-  Sparrow,
-  Hummingbird,
-  Woodpecker,
-  Pelican,
-  Stork,
-  Crane,
-  Heron,
-  Ibis,
-  Spoonbill,
-  Kingfisher,
-  Bee as BeeIcon,
-  Wasp,
-  Hornet,
-  Fly,
-  Mosquito,
-  Gnat,
-  Midge,
-  Tick,
-  Flea,
-  Louse,
-  Mite,
-  Chigger,
-  Bedbug,
-  Cockroach,
-  Termite,
-  Carpenter,
-  Weevil,
-  Aphid,
-  Scale,
-  Whitefly,
-  Thrips,
-  Leafhopper,
-  Planthopper,
-  Cicada,
-  Cricket,
-  Grasshopper,
-  Locust,
-  Katydid,
-  Mantis,
-  Walkingstick,
-  Earwig,
-  Silverfish,
-  Firebrat,
-  Springtail,
-  Bristletail,
-  Mayfly,
-  Dragonfly,
-  Damselfly,
-  Stonefly,
-  Caddisfly,
-  Lacewing,
-  Antlion,
-  Dobsonfly,
-  Fishfly,
-  Alderfly,
-  Snakefly,
-  Scorpionfly,
-  Hangingfly,
-  Bittacus,
-  Boreus,
-  Mecoptera,
-  Siphonaptera,
-  Strepsiptera,
-  Embioptera,
-  Zoraptera,
-  Grylloblattodea,
-  Mantophasmatodea,
-  Phasmatodea,
-  Orthoptera,
-  Dermaptera,
-  Plecoptera,
-  Ephemeroptera,
-  Odonata,
-  Neuroptera,
-  Megaloptera,
-  Raphidioptera,
-  Mecoptera as MecopteraIcon,
-  Siphonaptera as SiphonapteraIcon,
-  Strepsiptera as StrepsipteraIcon,
-  Embioptera as EmbiopteraIcon,
-  Zoraptera as ZorapteraIcon,
-  Grylloblattodea as GrylloblattodeaIcon,
-  Mantophasmatodea as MantophasmatodeaIcon
+  GraduationCap,
+  Brain,
 } from "lucide-react"
-import { PromptEnhancer } from "@/components/prompt-enhancer"
-import { DocumentAnalyzer } from "@/components/document-analyzer"
-import { HandwritingAssistant } from "@/components/handwriting-assistant"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import Link from "next/link"
+import { analyzePrompt, enhancePrompt, processHandwriting, analyzeDocument } from "@/lib/groq-service"
+import { useRouter } from "next/navigation"
+import { ContinueWriting } from "@/components/handwriting/continue-writing"
+import { GrammarFixer } from "@/components/handwriting/grammar-fixer"
+import { TextSummarizer } from "@/components/handwriting/text-summarizer"
+import { DrawingCanvas } from "@/components/handwriting/drawing-canvas"
 import { AIChatTutor } from "@/components/handwriting/ai-chat-tutor"
 import { AIQuizGenerator } from "@/components/handwriting/ai-quiz-generator"
-import Link from "next/link"
+import { DocumentAnalyzer } from "@/components/document-analyzer"
 
-interface ChatMessage {
+interface Message {
   id: string
   content: string
-  role: "user" | "assistant"
+  role: "user" | "ai"
   timestamp: Date
+}
+
+interface Chat {
+  id: string
+  title: string
+  messages: Message[]
+  createdAt: Date
+  agentId: string
 }
 
 interface Agent {
@@ -308,602 +61,1295 @@ interface Agent {
   icon: React.ReactNode
   description: string
   color: string
-  bgColor: string
-  borderColor: string
-  hoverColor: string
-  gradient: string
-  shadowColor: string
 }
 
-interface Tool {
+interface PromptHistory {
   id: string
-  name: string
-  icon: React.ReactNode
-  description: string
-  color: string
-  component: React.ReactNode
+  content: string
+  timestamp: Date
 }
 
-export default function ChatInterface() {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+export default function Home() {
+  const router = useRouter()
+
+  // State for messages in current chat
+  const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
-  const [selectedAgent, setSelectedAgent] = useState<string>("enhancer")
-  const [showAgentDropdown, setShowAgentDropdown] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
+
+  // State for chat history
+  const [chats, setChats] = useState<Chat[]>([])
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null)
+
+  // State for sidebar functionality
+  const [showChatHistory, setShowChatHistory] = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+
+  // State for footer dropdowns
+  const [showFooterAgents, setShowFooterAgents] = useState(false)
+
+  // State for handwriting tools
   const [showHandwritingTools, setShowHandwritingTools] = useState(false)
+  const [activeHandwritingTool, setActiveHandwritingTool] = useState<string | null>(null)
+
+  // State for educational tools
   const [showEducationalTools, setShowEducationalTools] = useState(false)
-  const [selectedHandwritingTool, setSelectedHandwritingTool] = useState<string | null>(null)
-  const [selectedEducationalTool, setSelectedEducationalTool] = useState<string | null>(null)
-  const [showMainInterface, setShowMainInterface] = useState(true)
+  const [activeEducationalTool, setActiveEducationalTool] = useState<string | null>(null)
+
+  // State for document analyzer
+  const [showDocumentAnalyzer, setShowDocumentAnalyzer] = useState(false)
+
+  // State for AI agents
+  const [currentAgent, setCurrentAgent] = useState<Agent>({
+    id: "enhancer",
+    name: "Prompt Enhancer",
+    icon: <Wand2 size={14} className="text-white" />,
+    description: "Automatically rewrites prompts to be more detailed, creative, or direct.",
+    color: "bg-indigo-500",
+  })
+
+  // State for prompt history
+  const [promptHistory, setPromptHistory] = useState<PromptHistory[]>([])
+
+  // State for API key status
+  const [hasApiKey, setHasApiKey] = useState(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const agents: Agent[] = [
+  // Memoized AI agents to prevent unnecessary re-renders
+  const agents: Agent[] = useMemo(() => [
     {
       id: "enhancer",
       name: "Prompt Enhancer",
-      icon: <div className="relative">
-        <Wand2 className="h-5 w-5" />
-        <Sparkles className="h-3 w-3 absolute -top-1 -right-1 text-yellow-400" />
-      </div>,
-      description: "Transform basic prompts into powerful, detailed instructions",
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50",
-      borderColor: "border-indigo-200",
-      hoverColor: "hover:bg-indigo-100",
-      gradient: "from-indigo-500 to-purple-600",
-      shadowColor: "shadow-indigo-200"
+      icon: <Wand2 size={14} className="text-white" />,
+      description: "Automatically rewrites prompts to be more detailed, creative, or direct.",
+      color: "bg-indigo-500",
     },
     {
       id: "analyzer",
-      name: "Document Analyzer",
-      icon: <div className="relative">
-        <FileText className="h-5 w-5" />
-        <Search className="h-3 w-3 absolute -bottom-1 -right-1 text-emerald-400" />
-      </div>,
-      description: "AI-powered document analysis, summaries, and insights",
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-      borderColor: "border-orange-200",
-      hoverColor: "hover:bg-orange-100",
-      gradient: "from-orange-500 to-red-500",
-      shadowColor: "shadow-orange-200"
+      name: "Prompt Analyzer",
+      icon: <LineChart size={14} className="text-white" />,
+      description: "Rates prompt quality based on clarity, specificity, and effectiveness.",
+      color: "bg-amber-500",
     },
     {
       id: "handwriting",
-      name: "Handwriting Tools",
-      icon: <div className="relative">
-        <PenTool className="h-5 w-5" />
-        <Palette className="h-3 w-3 absolute -top-1 -right-1 text-green-400" />
-      </div>,
-      description: "AI writing assistance and digital handwriting canvas",
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      borderColor: "border-green-200",
-      hoverColor: "hover:bg-green-100",
-      gradient: "from-green-500 to-emerald-500",
-      shadowColor: "shadow-green-200"
+      name: "Handwriting Assistant",
+      icon: <PenTool size={14} className="text-white" />,
+      description: "Continue writing, fix grammar, shorten text, or create summaries.",
+      color: "bg-green-500",
     },
     {
       id: "educational",
       name: "Educational Tools",
-      icon: <div className="relative">
-        <GraduationCap className="h-5 w-5" />
-        <Brain className="h-3 w-3 absolute -top-1 -right-1 text-blue-400" />
-      </div>,
-      description: "AI tutoring and interactive learning experiences",
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-200",
-      hoverColor: "hover:bg-blue-100",
-      gradient: "from-blue-500 to-cyan-500",
-      shadowColor: "shadow-blue-200"
-    }
-  ]
+      icon: <GraduationCap size={14} className="text-white" />,
+      description: "AI Chat Tutor and Quiz Generator for interactive learning.",
+      color: "bg-blue-600",
+    },
+    {
+      id: "document-analyzer",
+      name: "Document Analyzer",
+      icon: <FileText size={14} className="text-white" />,
+      description: "Upload and analyze documents with AI-powered insights and summaries.",
+      color: "bg-orange-500",
+    },
+  ], [])
 
-  const handwritingTools: Tool[] = [
+  // Memoized handwriting tools
+  const handwritingTools = useMemo(() => [
     {
       id: "continue",
       name: "Continue Writing",
-      icon: <div className="relative">
-        <Zap className="h-5 w-5" />
-        <Target className="h-3 w-3 absolute -bottom-1 -right-1 text-blue-400" />
-      </div>,
+      icon: <ArrowRight className="h-5 w-5" />,
       description: "AI continues your text naturally",
-      color: "text-blue-600",
-      component: <div>Continue Writing Tool</div>
+      color: "bg-blue-500",
+      component: <ContinueWriting />
     },
     {
       id: "grammar",
-      name: "Grammar Fixer",
-      icon: <div className="relative">
-        <Shield className="h-5 w-5" />
-        <Sparkles className="h-3 w-3 absolute -top-1 -right-1 text-emerald-400" />
-      </div>,
+      name: "Grammar & Style Fixer",
+      icon: <FileText className="h-5 w-5" />,
       description: "Fix grammar and improve style",
-      color: "text-emerald-600",
-      component: <div>Grammar Fixer Tool</div>
+      color: "bg-emerald-500",
+      component: <GrammarFixer />
     },
     {
       id: "summarize",
       name: "Text Summarizer",
-      icon: <div className="relative">
-        <BarChart3 className="h-5 w-5" />
-        <Lightbulb className="h-3 w-3 absolute -top-1 -right-1 text-purple-400" />
-      </div>,
-      description: "Summarize and shorten text",
-      color: "text-purple-600",
-      component: <div>Text Summarizer Tool</div>
+      icon: <BookOpen className="h-5 w-5" />,
+      description: "Create summaries and shorten text",
+      color: "bg-purple-500",
+      component: <TextSummarizer />
     },
     {
       id: "canvas",
-      name: "Drawing Canvas",
-      icon: <div className="relative">
-        <Brush className="h-5 w-5" />
-        <Palette className="h-3 w-3 absolute -bottom-1 -right-1 text-orange-400" />
-      </div>,
-      description: "Digital handwriting canvas",
-      color: "text-orange-600",
-      component: <div>Drawing Canvas Tool</div>
+      name: "Digital Canvas",
+      icon: <Palette className="h-5 w-5" />,
+      description: "Professional drawing and handwriting",
+      color: "bg-orange-500",
+      component: <DrawingCanvas />
     }
-  ]
+  ], [])
 
-  const educationalTools: Tool[] = [
+  // Memoized educational tools
+  const educationalTools = useMemo(() => [
     {
-      id: "tutor",
+      id: "ai-tutor",
       name: "AI Chat Tutor",
-      icon: <div className="relative">
-        <GraduationCap className="h-5 w-5" />
-        <Heart className="h-3 w-3 absolute -top-1 -right-1 text-pink-400" />
-      </div>,
-      description: "Personal AI tutor for any subject",
-      color: "text-blue-600",
+      icon: <GraduationCap className="h-5 w-5" />,
+      description: "Interactive AI tutor for any subject",
+      color: "bg-blue-500",
       component: <AIChatTutor />
     },
     {
-      id: "quiz",
-      name: "Quiz Generator",
-      icon: <div className="relative">
-        <Brain className="h-5 w-5" />
-        <Trophy className="h-3 w-3 absolute -bottom-1 -right-1 text-yellow-400" />
-      </div>,
-      description: "Create custom quizzes and tests",
-      color: "text-purple-600",
+      id: "quiz-generator",
+      name: "AI Quiz Generator",
+      icon: <Brain className="h-5 w-5" />,
+      description: "Create custom quizzes on any topic",
+      color: "bg-purple-500",
       component: <AIQuizGenerator />
     }
-  ]
+  ], [])
 
-  const scrollToBottom = () => {
+  // Optimized auto-scroll with debouncing
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+  }, [])
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    const timeoutId = setTimeout(scrollToBottom, 100)
+    return () => clearTimeout(timeoutId)
+  }, [messages, scrollToBottom])
 
+  // Focus input on load
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+    return () => clearTimeout(timeoutId)
+  }, [])
+
+  // Check for API key
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY
+    setHasApiKey(!!apiKey && apiKey !== 'your_groq_api_key_here')
+  }, [])
+
+  // Optimized localStorage operations with error handling
+  useEffect(() => {
+    try {
+      const savedChats = localStorage.getItem("typingmind-chats")
+      if (savedChats) {
+        const parsedChats = JSON.parse(savedChats)
+        setChats(parsedChats)
+
+        if (parsedChats.length > 0) {
+          const mostRecentChat = parsedChats.sort(
+            (a: Chat, b: Chat) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          )[0]
+          setCurrentChatId(mostRecentChat.id)
+          setMessages(mostRecentChat.messages)
+        }
+      }
+    } catch (error) {
+      console.error("Error loading saved chats:", error)
+      localStorage.removeItem("typingmind-chats") // Clear corrupted data
+    }
+  }, [])
+
+  // Debounced save to localStorage
+  useEffect(() => {
+    if (chats.length > 0) {
+      const timeoutId = setTimeout(() => {
+        try {
+          localStorage.setItem("typingmind-chats", JSON.stringify(chats))
+        } catch (error) {
+          console.error("Error saving chats:", error)
+        }
+      }, 500)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [chats])
+
+  // Optimized chat update
+  useEffect(() => {
+    if (currentChatId && messages.length > 0) {
+      setChats((prevChats) => 
+        prevChats.map((chat) => 
+          chat.id === currentChatId ? { ...chat, messages } : chat
+        )
+      )
+    }
+  }, [messages, currentChatId])
+
+  // Optimized click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showAgentDropdown) {
-        setShowAgentDropdown(false)
+      const target = event.target as HTMLElement
+      if (!target.closest(".footer-agents-dropdown") && !target.closest(".footer-agents-button")) {
+        setShowFooterAgents(false)
+      }
+      if (!target.closest(".handwriting-tools-dropdown") && !target.closest(".handwriting-tools-button")) {
+        setShowHandwritingTools(false)
+      }
+      if (!target.closest(".educational-tools-dropdown") && !target.closest(".educational-tools-button")) {
+        setShowEducationalTools(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside, { passive: true })
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [showAgentDropdown])
+  }, [])
 
-  useEffect(() => {
-    if (selectedAgent === "handwriting") {
-      setShowHandwritingTools(true)
-      setShowEducationalTools(false)
-    } else if (selectedAgent === "educational") {
-      setShowEducationalTools(true)
-      setShowHandwritingTools(false)
-    } else {
-      setShowHandwritingTools(false)
-      setShowEducationalTools(false)
-    }
-  }, [selectedAgent])
-
-  const handleSendMessage = async () => {
+  // Optimized message sending with better error handling
+  const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim()) return
 
-    const newMessage: ChatMessage = {
+    // Create a new chat if there isn't one
+    if (!currentChatId) {
+      createNewChat()
+    }
+
+    // Add user message
+    const userMessage: Message = {
       id: Date.now().toString(),
       content: inputValue,
       role: "user",
-      timestamp: new Date()
+      timestamp: new Date(),
     }
 
-    setMessages(prev => [...prev, newMessage])
+    setMessages((prev) => [...prev, userMessage])
+
+    // Add to prompt history
+    const newPrompt: PromptHistory = {
+      id: Date.now().toString(),
+      content: inputValue,
+      timestamp: new Date(),
+    }
+    setPromptHistory((prev) => [newPrompt, ...prev.slice(0, 49)])
+
+    const currentInput = inputValue
     setInputValue("")
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content: `I understand you want to work with the ${agents.find(a => a.id === selectedAgent)?.name}. This is a simulated response for demonstration purposes.`,
-        role: "assistant",
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, aiResponse])
-    }, 1000)
-  }
+    // Simulate AI typing
+    setIsTyping(true)
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+    try {
+      let response
+
+      switch (currentAgent.id) {
+        case "enhancer":
+          response = await enhancePrompt(currentInput).catch(error => {
+            console.error("Error enhancing prompt:", error);
+            return { text: "I encountered an error while enhancing your prompt.", enhancedPrompt: "" };
+          });
+          break;
+        case "analyzer":
+          response = await analyzePrompt(currentInput).catch(error => {
+            console.error("Error analyzing prompt:", error);
+            return { text: "I encountered an error while analyzing your prompt.", analysis: { score: 0, strengths: [], weaknesses: [], suggestions: [] } };
+          });
+          break;
+        case "handwriting":
+          response = await processHandwriting(currentInput, "continue").catch(error => {
+            console.error("Error processing handwriting:", error);
+            return { text: "I encountered an error while processing your text.", processedText: "" };
+          });
+          break;
+        case "educational":
+          response = { text: "Please use the Educational Tools below for AI tutoring and quiz generation features." };
+          break;
+        case "document-analyzer":
+          response = await analyzeDocument(currentInput, "summarize").catch(error => {
+            console.error("Error analyzing document:", error);
+            return { text: "I encountered an error while analyzing your document.", processedText: "" };
+          });
+          break;
+        default:
+          response = { text: "I'm not sure how to process that request." };
+      }
+
+      // Format the response based on the agent type
+      let responseText = ""
+
+      if (currentAgent.id === "enhancer" && response.enhancedPrompt) {
+        responseText = `Here's your enhanced prompt:\n\n"${response.enhancedPrompt}"`
+      } else if (currentAgent.id === "analyzer" && response.analysis) {
+        const { score, strengths, weaknesses, suggestions } = response.analysis
+        responseText = `Prompt Analysis Score: ${score}/100\n\n## Strengths\n${strengths.map((s) => `- ${s}`).join("\n")}\n\n## Areas for improvement\n${weaknesses.map((w) => `- ${w}`).join("\n")}\n\n## Suggestions\n${suggestions.map((s) => `- ${s}`).join("\n")}`
+      } else if (currentAgent.id === "handwriting" && response.processedText) {
+        responseText = `Here's the continued text:\n\n${response.processedText}`
+      } else if (currentAgent.id === "educational") {
+        responseText = "For the best educational experience, please use the Educational Tools below where you can access the AI Chat Tutor and Quiz Generator with full interactive features."
+      } else if (currentAgent.id === "document-analyzer" && response.processedText) {
+        responseText = `Here's the document analysis:\n\n${response.processedText}`
+      } else {
+        responseText = response.text || "I processed your request but couldn't generate a proper response."
+      }
+
+      // Add AI response with delay for natural feel
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: responseText,
+        role: "ai",
+        timestamp: new Date(),
+      }
+
+      setTimeout(() => {
+        setMessages((prev) => [...prev, aiMessage])
+        setIsTyping(false)
+      }, 1000)
+    } catch (error) {
+      console.error("Error processing with AI service:", error)
+
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm sorry, I encountered an error while processing your request. Please try again later.",
+        role: "ai",
+        timestamp: new Date(),
+      }
+
+      setTimeout(() => {
+        setMessages((prev) => [...prev, aiMessage])
+        setIsTyping(false)
+      }, 1000)
+    }
+  }, [inputValue, currentChatId, currentAgent.id])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
     }
-  }
+  }, [handleSendMessage])
 
-  const handleAgentSelect = (agentId: string) => {
-    setSelectedAgent(agentId)
-    setShowAgentDropdown(false)
-    setSelectedHandwritingTool(null)
-    setSelectedEducationalTool(null)
-    setShowMainInterface(true)
-  }
-
-  const handleToolSelect = (toolId: string, toolType: "handwriting" | "educational") => {
-    if (toolType === "handwriting") {
-      setSelectedHandwritingTool(toolId)
-      setShowMainInterface(false)
-    } else {
-      setSelectedEducationalTool(toolId)
-      setShowMainInterface(false)
+  const createNewChat = useCallback(() => {
+    const newChatId = Date.now().toString()
+    const newChat: Chat = {
+      id: newChatId,
+      title: "New Chat",
+      messages: [],
+      createdAt: new Date(),
+      agentId: currentAgent.id,
     }
+
+    setChats((prev) => [newChat, ...prev])
+    setCurrentChatId(newChatId)
+    setMessages([])
+    setShowChatHistory(false)
+
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+  }, [currentAgent.id])
+
+  const selectChat = useCallback((chatId: string) => {
+    const selectedChat = chats.find((chat) => chat.id === chatId)
+    if (selectedChat) {
+      setCurrentChatId(chatId)
+      setMessages(selectedChat.messages)
+      setShowChatHistory(false)
+    }
+  }, [chats])
+
+  const selectAgent = useCallback((agent: Agent) => {
+    if (agent) {
+      setCurrentAgent(agent)
+      setShowFooterAgents(false)
+      
+      // Reset special states
+      setShowHandwritingTools(false)
+      setActiveHandwritingTool(null)
+      setShowEducationalTools(false)
+      setActiveEducationalTool(null)
+      setShowDocumentAnalyzer(false)
+      
+      // If handwriting assistant is selected, show tools
+      if (agent.id === "handwriting") {
+        setShowHandwritingTools(true)
+      } else if (agent.id === "educational") {
+        setShowEducationalTools(true)
+      } else if (agent.id === "document-analyzer") {
+        setShowDocumentAnalyzer(true)
+        return // Don't create new chat for document analyzer
+      }
+      
+      // Reset messages to show empty chat with the new agent
+      setMessages([])
+      
+      // Create a new chat for this agent
+      const newChatId = Date.now().toString()
+      const newChat = {
+        id: newChatId,
+        title: `New ${agent.name} Chat`,
+        messages: [],
+        createdAt: new Date(),
+        agentId: agent.id,
+      }
+      
+      setChats(prev => [newChat, ...prev])
+      setCurrentChatId(newChatId)
+      
+      // Focus the input field
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+    }
+  }, [])
+
+  const selectHandwritingTool = useCallback((toolId: string) => {
+    setActiveHandwritingTool(toolId)
+    setShowHandwritingTools(false)
+    setMessages([])
+  }, [])
+
+  const selectEducationalTool = useCallback((toolId: string) => {
+    setActiveEducationalTool(toolId)
+    setShowEducationalTools(false)
+    setMessages([])
+  }, [])
+
+  const handlePromptClick = useCallback((prompt: string) => {
+    setInputValue(prompt)
+    inputRef.current?.focus()
+  }, [])
+
+  const toggleFooterAgents = useCallback(() => {
+    setShowFooterAgents(!showFooterAgents)
+    setShowHandwritingTools(false)
+    setShowEducationalTools(false)
+  }, [showFooterAgents])
+
+  const toggleHandwritingTools = useCallback(() => {
+    setShowHandwritingTools(!showHandwritingTools)
+    setShowFooterAgents(false)
+    setShowEducationalTools(false)
+  }, [showHandwritingTools])
+
+  const toggleEducationalTools = useCallback(() => {
+    setShowEducationalTools(!showEducationalTools)
+    setShowFooterAgents(false)
+    setShowHandwritingTools(false)
+  }, [showEducationalTools])
+
+  const backToChat = useCallback(() => {
+    setActiveHandwritingTool(null)
+    setActiveEducationalTool(null)
+    setShowDocumentAnalyzer(false)
+    setMessages([])
+  }, [])
+
+  // If document analyzer is active, show its component
+  if (showDocumentAnalyzer) {
+    return (
+      <div className="app-container">
+        <TooltipProvider delayDuration={300}>
+          <div className="sidebar">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
+                  onClick={backToChat}
+                >
+                  <ArrowRight className="h-5 w-5 rotate-180" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Back to Chat</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex flex-col items-center gap-8 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="sidebar-icon transition-smooth active">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Document Analyzer</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+
+        <div className="flex-1 flex flex-col blue-glow-top">
+          <div className="content-area">
+            <DocumentAnalyzer onBackToMain={backToChat} />
+          </div>
+        </div>
+      </div>
+    )
   }
 
-  const handleBackToMain = () => {
-    setSelectedHandwritingTool(null)
-    setSelectedEducationalTool(null)
-    setShowMainInterface(true)
-  }
-
-  const selectedAgentData = agents.find(agent => agent.id === selectedAgent)
-
-  // Render individual tool interfaces
-  if (!showMainInterface) {
-    if (selectedHandwritingTool) {
+  // If a handwriting tool is active, show its component
+  if (activeHandwritingTool) {
+    const tool = handwritingTools.find(t => t.id === activeHandwritingTool)
+    
+    if (tool?.id === 'canvas') {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-between mb-8">
+        <div className="h-screen">
+          <div className="bg-white border-b border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Button
                   variant="outline"
-                  onClick={handleBackToMain}
+                  size="sm"
+                  onClick={backToChat}
                   className="flex items-center gap-2"
                 >
-                  <PenTool className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 rotate-180" />
                   Back to Chat
                 </Button>
                 <div className="h-6 w-px bg-gray-300" />
                 <div className="flex items-center gap-2">
-                  {handwritingTools.find(t => t.id === selectedHandwritingTool)?.icon}
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {handwritingTools.find(t => t.id === selectedHandwritingTool)?.name}
-                  </h1>
+                  <Palette className="h-5 w-5 text-orange-600" />
+                  <h1 className="text-xl font-bold text-gray-900">Digital Handwriting Canvas</h1>
                 </div>
               </div>
-              <Link href="/handwriting">
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <PenTool className="h-4 w-4" />
-                  Full Handwriting Suite
-                </Button>
-              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleHandwritingTools}
+                className="handwriting-tools-button flex items-center gap-2"
+              >
+                <PenTool className="h-4 w-4" />
+                Tools
+              </Button>
             </div>
-            <HandwritingAssistant />
           </div>
+          
+          <div className="h-[calc(100vh-60px)]">
+            {tool.component}
+          </div>
+
+          {showHandwritingTools && (
+            <div className="absolute top-16 right-4 footer-agents-dropdown handwriting-tools-dropdown">
+              <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
+                <h3 className="font-medium text-sm">Switch Tool</h3>
+              </div>
+              <div className="p-2">
+                {handwritingTools.map((toolOption) => (
+                  <div
+                    key={toolOption.id}
+                    className={`agent-option ${toolOption.id === activeHandwritingTool ? 'active' : ''}`}
+                    onClick={() => selectHandwritingTool(toolOption.id)}
+                  >
+                    <div className={`w-6 h-6 ${toolOption.color} rounded-md flex items-center justify-center text-white`}>
+                      {toolOption.icon}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">{toolOption.name}</div>
+                      <div className="text-xs text-gray-500">{toolOption.description}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )
     }
-
-    if (selectedEducationalTool) {
-      const tool = educationalTools.find(t => t.id === selectedEducationalTool)
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
+    
+    return (
+      <div className="app-container">
+        <TooltipProvider delayDuration={300}>
+          <div className="sidebar">
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
-                  onClick={handleBackToMain}
-                  className="flex items-center gap-2"
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
+                  onClick={backToChat}
                 >
-                  <GraduationCap className="h-4 w-4" />
-                  Back to Chat
+                  <ArrowRight className="h-5 w-5 rotate-180" />
                 </Button>
-                <div className="h-6 w-px bg-gray-300" />
-                <div className="flex items-center gap-2">
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Back to Chat</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex flex-col items-center gap-8 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="sidebar-icon transition-smooth active">
+                    <PenTool className="h-5 w-5" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>{tool?.name}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+
+        <div className="flex-1 flex flex-col blue-glow-top">
+          <div className="content-area">
+            <div className="max-w-6xl mx-auto h-full">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
                   {tool?.icon}
                   <h1 className="text-2xl font-bold text-gray-900">{tool?.name}</h1>
                 </div>
+                <p className="text-gray-600">{tool?.description}</p>
               </div>
-            </div>
-            <div className="max-w-6xl mx-auto">
               {tool?.component}
             </div>
           </div>
         </div>
-      )
-    }
-  }
-
-  // Render specific agent interfaces
-  if (selectedAgent === "enhancer") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Wand2 className="h-6 w-6 text-indigo-600" />
-                <Sparkles className="h-4 w-4 absolute -top-1 -right-1 text-yellow-400" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900">AI Prompt Enhancer</h1>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setSelectedAgent("enhancer")}
-              className="flex items-center gap-2"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Back to Chat
-            </Button>
-          </div>
-          <PromptEnhancer />
-        </div>
       </div>
     )
   }
 
-  if (selectedAgent === "analyzer") {
+  // If an educational tool is active, show its component
+  if (activeEducationalTool) {
+    const tool = educationalTools.find(t => t.id === activeEducationalTool)
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="container mx-auto px-4 py-8">
-          <DocumentAnalyzer onBackToMain={() => setSelectedAgent("analyzer")} />
-        </div>
-      </div>
-    )
-  }
-
-  // Main chat interface
-  return (
-    <div className="app-container">
-      {/* Sidebar */}
-      <div className="sidebar">
-        <TooltipProvider>
-          <div className="tooltip-wrapper">
+      <div className="app-container">
+        <TooltipProvider delayDuration={300}>
+          <div className="sidebar">
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="sidebar-icon active">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
+                  onClick={backToChat}
+                >
+                  <ArrowRight className="h-5 w-5 rotate-180" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Back to Chat</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex flex-col items-center gap-8 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="sidebar-icon transition-smooth active">
+                    <GraduationCap className="h-5 w-5" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>{tool?.name}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        </TooltipProvider>
+
+        <div className="flex-1 flex flex-col blue-glow-top">
+          <div className="content-area">
+            <div className="max-w-6xl mx-auto h-full">
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                  {tool?.icon}
+                  <h1 className="text-2xl font-bold text-gray-900">{tool?.name}</h1>
+                </div>
+                <p className="text-gray-600">{tool?.description}</p>
+              </div>
+              {tool?.component}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="app-container">
+      <TooltipProvider delayDuration={300}>
+        <div className="sidebar">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full mb-4 hover:bg-gray-100/10 transition-smooth"
+                onClick={createNewChat}
+              >
+                <Plus className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>New Chat</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <div className="flex flex-col items-center gap-8 mt-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`sidebar-icon transition-smooth ${showChatHistory ? "active" : ""}`}
+                  onClick={() => {
+                    setShowChatHistory(!showChatHistory)
+                  }}
+                >
                   <MessageSquare className="h-5 w-5" />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right">
-                <p>Chat Interface</p>
+                <p>Chat History</p>
               </TooltipContent>
             </Tooltip>
           </div>
 
-          <div className="tooltip-wrapper">
+          <div className="mt-auto">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Link href="/handwriting">
-                  <div className="sidebar-icon">
-                    <div className="relative">
-                      <PenTool className="h-5 w-5" />
-                      <Palette className="h-3 w-3 absolute -top-1 -right-1 text-green-400" />
-                    </div>
-                  </div>
-                </Link>
+                <div className="sidebar-icon transition-smooth">
+                  <Settings className="h-5 w-5" />
+                </div>
               </TooltipTrigger>
               <TooltipContent side="right">
-                <p>Handwriting Suite</p>
+                <p>Settings</p>
               </TooltipContent>
             </Tooltip>
           </div>
-        </TooltipProvider>
-      </div>
 
-      {/* Main Content */}
-      <div className="content-area blue-glow-top">
-        <div className="chat-container">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="info-icon">
-                <Bot className="h-6 w-6 text-blue-600" />
-              </div>
-              <h1 className="text-4xl font-bold text-gray-900">TypingMind</h1>
+          <div className="mt-4 relative">
+            <div
+              className="w-8 h-8 bg-gray-200/20 rounded-full flex items-center justify-center transition-smooth hover:bg-gray-300/20 cursor-pointer"
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+            >
+              <span className="text-sm font-medium">U</span>
             </div>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Your intelligent AI assistant for enhanced productivity and creativity
-            </p>
+
+            {showProfileMenu && (
+              <div className="sidebar-dropdown">
+                <div className="sidebar-dropdown-item">
+                  <User size={16} />
+                  <span>Profile</span>
+                </div>
+                <div className="sidebar-dropdown-item">
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </div>
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* Agent Selection */}
-          <div className="mb-6">
-            <div className="relative max-w-md mx-auto">
-              <button
-                onClick={() => setShowAgentDropdown(!showAgentDropdown)}
-                className={`w-full flex items-center justify-between p-4 rounded-lg border-2 transition-all ${selectedAgentData?.borderColor} ${selectedAgentData?.bgColor} ${selectedAgentData?.hoverColor}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg bg-gradient-to-r ${selectedAgentData?.gradient} text-white shadow-lg ${selectedAgentData?.shadowColor}`}>
-                    {selectedAgentData?.icon}
+        {/* Chat History Dropdown */}
+        {showChatHistory && (
+          <div className="sidebar-dropdown mt-16">
+            <div className="flex justify-between items-center px-2 pb-2 border-b border-gray-100/20">
+              <h3 className="font-medium text-sm">Recent Chats</h3>
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={createNewChat}>
+                <Plus className="h-3 w-3 mr-1" /> New
+              </Button>
+            </div>
+            <div className="chat-history-list">
+              {chats.length > 0 ? (
+                chats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    className={`chat-history-item ${currentChatId === chat.id ? "active" : ""}`}
+                    onClick={() => selectChat(chat.id)}
+                  >
+                    <MessageSquare size={16} />
+                    <div className="flex-1 truncate">{chat.title || "New Chat"}</div>
                   </div>
-                  <div className="text-left">
-                    <div className={`font-semibold ${selectedAgentData?.color}`}>
-                      {selectedAgentData?.name}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {selectedAgentData?.description}
-                    </div>
-                  </div>
-                </div>
-                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showAgentDropdown ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showAgentDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
-                  {agents.map((agent) => (
-                    <button
-                      key={agent.id}
-                      onClick={() => handleAgentSelect(agent.id)}
-                      className={`w-full flex items-center gap-3 p-4 transition-all ${agent.hoverColor} ${selectedAgent === agent.id ? agent.bgColor : ''}`}
-                    >
-                      <div className={`p-2 rounded-lg bg-gradient-to-r ${agent.gradient} text-white shadow-lg ${agent.shadowColor}`}>
-                        {agent.icon}
-                      </div>
-                      <div className="text-left">
-                        <div className={`font-semibold ${agent.color}`}>
-                          {agent.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {agent.description}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                ))
+              ) : (
+                <div className="text-sm text-gray-500 p-2">No chat history yet</div>
               )}
             </div>
           </div>
+        )}
 
-          {/* Tool Selection Dropdowns */}
-          {showHandwritingTools && (
-            <div className="mb-6">
-              <div className="max-w-2xl mx-auto">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center flex items-center justify-center gap-2">
-                  <PenTool className="h-5 w-5 text-green-600" />
-                  Choose Handwriting Tool
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {handwritingTools.map((tool) => (
-                    <button
-                      key={tool.id}
-                      onClick={() => handleToolSelect(tool.id, "handwriting")}
-                      className="flex items-center gap-3 p-4 bg-white border-2 border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all group"
-                    >
-                      <div className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg group-hover:shadow-green-200">
-                        {tool.icon}
-                      </div>
-                      <div className="text-left">
-                        <div className={`font-semibold ${tool.color}`}>
-                          {tool.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {tool.description}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+      </TooltipProvider>
 
-          {showEducationalTools && (
-            <div className="mb-6">
-              <div className="max-w-2xl mx-auto">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center flex items-center justify-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-blue-600" />
-                  Choose Educational Tool
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {educationalTools.map((tool) => (
-                    <button
-                      key={tool.id}
-                      onClick={() => handleToolSelect(tool.id, "educational")}
-                      className="flex items-center gap-3 p-4 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group"
-                    >
-                      <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg group-hover:shadow-blue-200">
-                        {tool.icon}
-                      </div>
-                      <div className="text-left">
-                        <div className={`font-semibold ${tool.color}`}>
-                          {tool.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {tool.description}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Chat Messages */}
-          <div className="flex-1 mb-6">
-            {messages.length === 0 ? (
-              <div className="empty-chat">
+      {/* Main Content with enhanced blue glow */}
+      <div className="flex-1 flex flex-col blue-glow-top">
+        <div className="content-area">
+          {messages.length === 0 ? (
+            <div className="max-w-4xl mx-auto h-full flex flex-col">
+              <div className="flex flex-col items-center text-center mb-8 mt-16">
                 <div className="info-icon">
-                  {selectedAgentData?.icon}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                      stroke="#2563EB"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path d="M12 16V12" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M12 8H12.01"
+                      stroke="#2563EB"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Ready to help with {selectedAgentData?.name}
-                </h2>
-                <p className="text-gray-600 mb-6 max-w-md">
-                  {selectedAgentData?.description}
-                </p>
-                {(selectedAgent === "handwriting" || selectedAgent === "educational") && (
-                  <p className="text-sm text-gray-500">
-                    Select a tool above to get started, or type a message to begin a conversation.
-                  </p>
+                <h1 className="text-2xl font-medium mb-1">Hey, I'm TypingMind.</h1>
+                <p className="text-gray-500">How can I help you with your prompts today?</p>
+                
+                {/* API Key Status */}
+                {!hasApiKey && (
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-sm">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <span className="text-amber-800">
+                      Using demo mode. Add your Groq API key to <code className="bg-amber-100 px-1 rounded">.env.local</code> for enhanced AI responses.
+                    </span>
+                  </div>
                 )}
               </div>
-            ) : (
-              <ScrollArea className="h-96">
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`message ${message.role === "user" ? "message-user" : "message-ai"}`}
-                    >
-                      <div className="message-avatar">
-                        {message.role === "user" ? (
-                          <User className="h-4 w-4" />
-                        ) : (
-                          <Bot className="h-4 w-4" />
-                        )}
+
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-medium">Your AI Tools</h2>
+                  {hasApiKey && (
+                    <div className="flex items-center gap-1 text-xs text-green-600">
+                      <Key className="h-3 w-3" />
+                      <span>Groq API Connected</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "enhancer")!)}
+                  >
+                      <div className="agent-icon bg-indigo-100">
+                        <Wand2 size={16} className="text-indigo-500" />
                       </div>
-                      <div className="message-content">
-                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      <div>
+                        <h3 className="font-medium text-sm">Prompt Enhancer</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Automatically rewrites prompts to be more detailed, creative, or direct. Offers tone control
+                          and adds context.
+                        </p>
                       </div>
                     </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-            )}
-          </div>
 
-          {/* Input Area */}
-          <div className="footer">
-            <div className="relative max-w-4xl mx-auto">
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "analyzer")!)}
+                  >
+                      <div className="agent-icon bg-amber-100">
+                        <LineChart size={16} className="text-amber-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Prompt Analyzer</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Rates prompt quality based on clarity and effectiveness. Gives real-time suggestions and
+                          explanations.
+                        </p>
+                      </div>
+                    </div>
+
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "handwriting")!)}
+                  >
+                      <div className="agent-icon bg-green-100">
+                        <PenTool size={16} className="text-green-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Handwriting Assistant</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Continue writing, fix grammar, shorten text, or create summaries with AI assistance.
+                        </p>
+                      </div>
+                    </div>
+
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "educational")!)}
+                  >
+                      <div className="agent-icon bg-blue-100">
+                        <GraduationCap size={16} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Educational Tools</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          AI Chat Tutor for interactive learning and Quiz Generator for testing knowledge on any topic.
+                        </p>
+                      </div>
+                    </div>
+
+                  <div 
+                    className="agent-card transition-smooth cursor-pointer col-span-2"
+                    onClick={() => selectAgent(agents.find(agent => agent.id === "document-analyzer")!)}
+                  >
+                      <div className="agent-icon bg-orange-100">
+                        <FileText size={16} className="text-orange-500" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">Document Analyzer</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Upload and analyze documents with AI-powered insights, summaries, and keyword extraction.
+                        </p>
+                      </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="chat-container">
+              {messages.map((message) => (
+                <div 
+                  key={message.id} 
+                  className={`message message-${message.role} ${
+                    message.role === "ai" ? currentAgent.id : ""
+                  }`}
+                >
+                  {message.role === "ai" && (
+                    <div className="message-avatar">
+                      <span className={`text-xs font-bold ${
+                        currentAgent.id === "enhancer" ? "text-indigo-500" : 
+                        currentAgent.id === "analyzer" ? "text-amber-500" : 
+                        currentAgent.id === "handwriting" ? "text-green-500" : 
+                        currentAgent.id === "educational" ? "text-blue-600" : 
+                        currentAgent.id === "document-analyzer" ? "text-orange-500" : "text-indigo-500"
+                      }`}>A</span>
+                    </div>
+                  )}
+                  <div className="message-content">
+                    <div className="whitespace-pre-wrap">
+                      {message.content.split('\n').map((line, i) => {
+                        // For enhanced prompt display (single output)
+                        if (line.startsWith("Here's your enhanced prompt:") || line.startsWith("Here's the continued text:") || line.startsWith("Here's the document analysis:")) {
+                          return <div key={i} className="font-medium text-indigo-700 mb-2">{line}</div>;
+                        }
+                        
+                        // For enhanced prompt content (quoted text)
+                        if (line.startsWith('"') && line.endsWith('"')) {
+                          const promptText = line.slice(1, -1); // Remove quotes
+                          return (
+                            <div key={i} className="enhanced-prompt-display">
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 my-3">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <p className="text-sm text-indigo-900 leading-relaxed">{promptText}</p>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="ml-2 flex-shrink-0 hover:bg-indigo-100"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(promptText);
+                                    }}
+                                  >
+                                    <Copy className="h-4 w-4 text-indigo-600" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // For Analyzer's score display
+                        if (line.startsWith("Prompt Analysis Score:")) {
+                          const score = parseInt(line.split(":")[1]);
+                          const scoreClass = score >= 90 ? "score-high" : score >= 70 ? "score-medium" : "score-low";
+                          
+                          return (
+                            <div key={i} className="score-display-container">
+                              <div className="score-header">Prompt Analysis Score</div>
+                              <div className="score-display">
+                                <div className="score-circle-container">
+                                  <div className={`score-circle ${scoreClass}`}>
+                                    <span className="score-value">{score}</span>
+                                    <span className="score-max">/100</span>
+                                  </div>
+                                </div>
+                                <div className="score-bar-container">
+                                  <div className="score-label">
+                                    <span>{score < 70 ? "Needs Improvement" : score < 90 ? "Good" : "Excellent"}</span>
+                                  </div>
+                                  <div className="score-bar-background">
+                                    <div 
+                                      className={`score-bar ${scoreClass}`}
+                                      style={{ width: `${score}%` }}
+                                    ></div>
+                                  </div>
+                                  <div className="score-markers">
+                                    <div className="score-marker" style={{ left: "0%" }}>0</div>
+                                    <div className="score-marker" style={{ left: "25%" }}>25</div>
+                                    <div className="score-marker" style={{ left: "50%" }}>50</div>
+                                    <div className="score-marker" style={{ left: "75%" }}>75</div>
+                                    <div className="score-marker" style={{ left: "100%" }}>100</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // For section headers in analyzer output
+                        if (line.startsWith("## ")) {
+                          const sectionTitle = line.substring(3);
+                          const sectionType = 
+                            sectionTitle.includes("Strengths") ? "strengths" : 
+                            sectionTitle.includes("Areas") ? "weaknesses" : 
+                            sectionTitle.includes("Suggestions") ? "suggestions" : "default";
+                          
+                          return (
+                            <div key={i} className={`analysis-section-header ${sectionType}`}>
+                              <div className="section-icon"></div>
+                              <h3>{sectionTitle}</h3>
+                            </div>
+                          );
+                        }
+                        
+                        // For strength/weakness bullet points
+                        if (line.startsWith("- ") && message.content.includes("Strengths:") && message.content.includes("Areas for improvement:")) {
+                          const itemText = line.substring(2);
+                          
+                          // Determine if this is a strength, weakness or suggestion
+                          const isStrength = message.content.indexOf(line) > message.content.indexOf("Strengths:") && 
+                                            message.content.indexOf(line) < message.content.indexOf("Areas for improvement:");
+                          
+                          const isWeakness = message.content.indexOf(line) > message.content.indexOf("Areas for improvement:") && 
+                                            message.content.indexOf(line) < message.content.indexOf("Suggestions:");
+                          
+                          const isSuggestion = message.content.indexOf(line) > message.content.indexOf("Suggestions:");
+                          
+                          if (isStrength) {
+                            return (
+                              <div key={i} className="analysis-badge-container strength">
+                                <div className="analysis-badge-icon">✓</div>
+                                <span className="analysis-badge strength-badge">{itemText}</span>
+                              </div>
+                            );
+                          } else if (isWeakness) {
+                            return (
+                              <div key={i} className="analysis-badge-container weakness">
+                                <div className="analysis-badge-icon">!</div>
+                                <span className="analysis-badge weakness-badge">{itemText}</span>
+                              </div>
+                            );
+                          } else if (isSuggestion) {
+                            return (
+                              <div key={i} className="analysis-badge-container suggestion">
+                                <div className="analysis-badge-icon">↑</div>
+                                <span className="analysis-badge suggestion-badge">{itemText}</span>
+                              </div>
+                            );
+                          }
+                        }
+                        
+                        // Default rendering for other lines
+                        return <span key={i}>{line}<br/></span>;
+                      })}
+                    </div>
+                  </div>
+                  {message.role === "user" && (
+                    <div className="message-avatar">
+                      <span className="text-blue-500 text-xs font-bold">U</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {isTyping && (
+                <div className="message message-ai">
+                  <div className="message-avatar">
+                    <span className="text-indigo-500 text-xs font-bold">A</span>
+                  </div>
+                  <div className="message-content">
+                    <p className="flex gap-1">
+                      <span className="animate-pulse">.</span>
+                      <span className="animate-pulse delay-100">.</span>
+                      <span className="animate-pulse delay-200">.</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        <div className="footer">
+          <div className="max-w-4xl mx-auto">
+            <div className="relative">
               <Input
                 ref={inputRef}
-                placeholder={`Message ${selectedAgentData?.name}...`}
+                className={`chat-input transition-smooth ${currentAgent.id}-input`}
+                placeholder={
+                  currentAgent.id === "enhancer" 
+                    ? "Enter a prompt to enhance..." 
+                    : currentAgent.id === "analyzer"
+                    ? "Enter a prompt to analyze..." 
+                    : currentAgent.id === "handwriting"
+                    ? "Enter text to continue, fix, shorten, or summarize..."
+                    : currentAgent.id === "educational"
+                    ? "Use the Educational Tools below for AI tutoring and quiz features..."
+                    : currentAgent.id === "document-analyzer"
+                    ? "Enter document text to analyze or use the Document Analyzer interface..."
+                    : "Enter your prompt or ask for prompt assistance..."
+                }
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="chat-input"
               />
               <div className="chat-input-buttons">
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!inputValue.trim()}
-                  size="icon"
-                  className="chat-input-button bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Send className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="chat-input-button">
+                  <Mic className="h-5 w-5 text-gray-400" />
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`chat-input-button ${inputValue.trim() ? "glow-button" : ""}`}
+                  onClick={handleSendMessage}
+                  disabled={!inputValue.trim() || isTyping}
+                >
+                  <Send className={`h-5 w-5 ${inputValue.trim() ? "text-blue-500" : "text-gray-400"}`} />
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`text-xs flex items-center gap-1 hover:bg-gray-50/50 transition-smooth border footer-agents-button ${
+                      currentAgent.id === "enhancer" 
+                        ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
+                        : currentAgent.id === "analyzer"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : currentAgent.id === "handwriting"
+                        ? "bg-green-50 text-green-700 border-green-200"
+                        : currentAgent.id === "educational"
+                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                        : currentAgent.id === "document-analyzer"
+                        ? "bg-orange-50 text-orange-700 border-orange-200"
+                        : "bg-white/50 border-gray-200/30"
+                    }`}
+                    onClick={toggleFooterAgents}
+                  >
+                    <div className={`w-4 h-4 ${currentAgent.color} rounded-md flex items-center justify-center mr-1`}>
+                      {currentAgent.icon}
+                    </div>
+                    {currentAgent.name}
+                    <ChevronDown className="h-3 w-3 ml-1 text-gray-400" />
+                  </Button>
+
+                  {showFooterAgents && (
+                    <div className="footer-agents-dropdown">
+                      <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
+                        <h3 className="font-medium text-sm">Select AI Agent</h3>
+                      </div>
+                      <div className="p-2">
+                        {agents.map((agent) => (
+                          <div
+                            key={agent.id}
+                            className={`agent-option ${currentAgent.id === agent.id ? "active" : ""}`}
+                            onClick={() => selectAgent(agent)}
+                          >
+                            <div className={`w-6 h-6 ${agent.color} rounded-md flex items-center justify-center`}>
+                              {agent.icon}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium">{agent.name}</div>
+                              <div className="text-xs text-gray-500">{agent.description}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Handwriting Tools Dropdown */}
+                {currentAgent.id === "handwriting" && (
+                  <div className="relative">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs flex items-center gap-1 hover:bg-green-50/50 transition-smooth border handwriting-tools-button bg-green-50 text-green-700 border-green-200"
+                      onClick={toggleHandwritingTools}
+                    >
+                      <PenTool className="h-3 w-3" />
+                      Tools
+                      <ChevronDown className="h-3 w-3 ml-1 text-gray-400" />
+                    </Button>
+
+                    {showHandwritingTools && (
+                      <div className="footer-agents-dropdown handwriting-tools-dropdown">
+                        <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
+                          <h3 className="font-medium text-sm">Handwriting Tools</h3>
+                        </div>
+                        <div className="p-2">
+                          {handwritingTools.map((tool) => (
+                            <div
+                              key={tool.id}
+                              className="agent-option"
+                              onClick={() => selectHandwritingTool(tool.id)}
+                            >
+                              <div className={`w-6 h-6 ${tool.color} rounded-md flex items-center justify-center text-white`}>
+                                {tool.icon}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium">{tool.name}</div>
+                                <div className="text-xs text-gray-500">{tool.description}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Educational Tools Dropdown */}
+                {currentAgent.id === "educational" && (
+                  <div className="relative">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs flex items-center gap-1 hover:bg-blue-50/50 transition-smooth border educational-tools-button bg-blue-50 text-blue-700 border-blue-200"
+                      onClick={toggleEducationalTools}
+                    >
+                      <GraduationCap className="h-3 w-3" />
+                      Tools
+                      <ChevronDown className="h-3 w-3 ml-1 text-gray-400" />
+                    </Button>
+
+                    {showEducationalTools && (
+                      <div className="footer-agents-dropdown educational-tools-dropdown">
+                        <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100/20">
+                          <h3 className="font-medium text-sm">Educational Tools</h3>
+                        </div>
+                        <div className="p-2">
+                          {educationalTools.map((tool) => (
+                            <div
+                              key={tool.id}
+                              className="agent-option"
+                              onClick={() => selectEducationalTool(tool.id)}
+                            >
+                              <div className={`w-6 h-6 ${tool.color} rounded-md flex items-center justify-center text-white`}>
+                                {tool.icon}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium">{tool.name}</div>
+                                <div className="text-xs text-gray-500">{tool.description}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
